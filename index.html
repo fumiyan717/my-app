@@ -467,12 +467,13 @@
     .hidden-input {
       position: absolute;
       opacity: 0;
-      pointer-events: auto;
-      width: 100%;
-      height: 100%;
+      width: 1px;
+      height: 1px;
       top: 0;
       left: 0;
-      cursor: default;
+      pointer-events: none;
+      border: none;
+      background: transparent;
     }
 
     .action-btn {
@@ -4672,6 +4673,7 @@ const gameState = {
   handwriteGuideVisible: true,
   isDrawingHw: false
 };
+window.gameState = gameState;
 
 // --- ストレージ操作 ---
 function getStorage(key, defaultVal) {
@@ -4916,21 +4918,31 @@ function toggleSound() {
 }
 
 function updateBgmState(screen) {
-  if (!gameState.soundEnabled) return;
-  const bgmHome = document.getElementById('bgm-home');
-  const bgmBattle = document.getElementById('bgm-battle');
-  if (screen === 'home') {
-    if (bgmBattle) { bgmBattle.pause(); bgmBattle.currentTime = 0; }
-    if (bgmHome) {
-      bgmHome.volume = 0.35;
-      bgmHome.play().catch(() => {});
+  try {
+    if (!gameState.soundEnabled) return;
+    const bgmHome = document.getElementById('bgm-home');
+    const bgmBattle = document.getElementById('bgm-battle');
+    if (screen === 'home') {
+      if (bgmBattle) {
+        try { bgmBattle.pause(); bgmBattle.currentTime = 0; } catch (e) {}
+      }
+      if (bgmHome) {
+        bgmHome.volume = 0.35;
+        const p = bgmHome.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
+    } else if (screen === 'battle') {
+      if (bgmHome) {
+        try { bgmHome.pause(); bgmHome.currentTime = 0; } catch (e) {}
+      }
+      if (bgmBattle) {
+        bgmBattle.volume = 0.45;
+        const p = bgmBattle.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
     }
-  } else if (screen === 'battle') {
-    if (bgmHome) { bgmHome.pause(); bgmHome.currentTime = 0; }
-    if (bgmBattle) {
-      bgmBattle.volume = 0.45;
-      bgmBattle.play().catch(() => {});
-    }
+  } catch (e) {
+    console.warn('BGM update skipped:', e);
   }
 }
 
@@ -5385,41 +5397,10 @@ function focusHiddenInput() {
 
 function initInputListeners() {
   const hiddenInput = document.getElementById('hidden-input');
-  gameState.isImeComposing = false;
 
   if (hiddenInput) {
-    // 日本語IME 確定・変換中イベント
-    hiddenInput.addEventListener('compositionstart', () => {
-      gameState.isImeComposing = true;
-    });
-
-    hiddenInput.addEventListener('compositionupdate', (e) => {
-      const bar = document.getElementById('typing-preview-bar');
-      if (bar && e.data) {
-        bar.classList.remove('ready');
-        bar.innerHTML = `🇯🇵 日本語変換中: <span class="typing-key-badge">${e.data}</span> ➔ Enterキーで確定`;
-      }
-    });
-
-    hiddenInput.addEventListener('compositionend', (e) => {
-      gameState.isImeComposing = false;
-      const committed = e.data || hiddenInput.value;
-      if (committed) {
-        for (let ch of committed) {
-          if (/[ァ-ヶ]/.test(ch)) {
-            ch = String.fromCharCode(ch.charCodeAt(0) - 0x60);
-          }
-          if (/[ぁ-ゖー]/.test(ch)) {
-            handleCharInput(ch);
-          }
-        }
-      }
-      hiddenInput.value = '';
-      updateAnswerSlotsDisplay();
-    });
-
+    // 仮想キーボードや音声入力・IME確定からの入力フォールバック
     hiddenInput.addEventListener('input', (e) => {
-      if (gameState.isImeComposing || e.isComposing) return;
       const val = hiddenInput.value;
       if (val) {
         for (let ch of val) {
@@ -5435,67 +5416,96 @@ function initInputListeners() {
       }
     });
 
-    hiddenInput.addEventListener('keydown', (e) => {
-      if (gameState.isImeComposing || e.isComposing || e.keyCode === 229) {
-        e.stopPropagation();
-        return;
+    // 日本語IME 確定イベント
+    hiddenInput.addEventListener('compositionend', (e) => {
+      const committed = e.data || hiddenInput.value;
+      if (committed) {
+        for (let ch of committed) {
+          if (/[ァ-ヶ]/.test(ch)) {
+            ch = String.fromCharCode(ch.charCodeAt(0) - 0x60);
+          }
+          if (/[ぁ-ゖー]/.test(ch)) {
+            handleCharInput(ch);
+          }
+        }
       }
+      hiddenInput.value = '';
+      updateAnswerSlotsDisplay();
     });
+    // ※ hiddenInputでstopPropagationは絶対に呼ばない（グローバルキーボード処理を阻害しないため）
   }
 
-  // 物理キーボード / PCキー入力（フォーカスが外れていてもグローバルに常時反応）
+  // 物理キーボード / PCキー入力（フォーカス位置・日本語IME状態にかかわらず100%確実に常時反応）
   window.addEventListener('keydown', (e) => {
     // フォーム操作中（ドロップダウン等）はブラウザ標準挙動
     if (e.target && e.target.tagName === 'SELECT') return;
     if (e.target && e.target.tagName === 'TEXTAREA') return;
-    if (e.target && e.target.tagName === 'INPUT' && e.target.id !== 'hidden-input') return;
+
+    // ブラウザの管理ショートカット (Ctrl+R, Ctrl+Shift+I, Meta等) は除外
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+    // 1. スタート画面（ホーム画面）で Enter / Space が押されたらゲームを開始
+    const startModal = document.getElementById('start-modal');
+    if (startModal && startModal.style.display !== 'none') {
+      if (e.key === 'Enter' || e.key === ' ' || e.code === 'Enter' || e.code === 'Space') {
+        e.preventDefault();
+        startGame();
+      }
+      return;
+    }
+
+    // 2. 結果画面で Enter / Space が押されたら再スタート
+    const resModal = document.getElementById('result-modal');
+    if (resModal && resModal.style.display !== 'none') {
+      if (e.key === 'Enter' || e.key === ' ' || e.code === 'Enter' || e.code === 'Space') {
+        e.preventDefault();
+        startGame();
+      }
+      return;
+    }
+
+    // その他のモーダル（確認ダイアログ・ヘルプ等）が開いている場合はゲーム入力を抑止
+    const confirmModal = document.getElementById('confirm-quit-modal');
+    if (confirmModal && confirmModal.style.display !== 'none') return;
+    const howToModal = document.getElementById('how-to-modal');
+    if (howToModal && howToModal.style.display !== 'none') return;
+    const customModal = document.getElementById('custom-modal');
+    if (customModal && customModal.style.display !== 'none') return;
 
     // ゲームバトル中かつ出題中のみ受付
     if (!gameState.currentQuestion || gameState.isProcessingAnswer) return;
 
-    // モーダル表示中は除外
-    const startModal = document.getElementById('start-modal');
-    if (startModal && startModal.style.display !== 'none') return;
-    const resModal = document.getElementById('result-modal');
-    if (resModal && resModal.style.display !== 'none') return;
-    const confirmModal = document.getElementById('confirm-quit-modal');
-    if (confirmModal && confirmModal.style.display !== 'none') return;
-
-    // 日本語IME変換中の場合はIMEに委ねる
-    if (gameState.isImeComposing) return;
-
-    // ブラウザのショートカットキー（Ctrl+R, Ctrl+W, Meta等）は阻害しない
-    if (e.ctrlKey || e.altKey || e.metaKey) return;
-
-    // 1. Enter キー（発射）
+    // 【操作キー判定】
+    // 発射・決定 (Enter)
     if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter') {
       e.preventDefault();
       handleSubmitAnswer();
       return;
     }
 
-    // 2. Backspace キー（1文字削除）
+    // 1文字削除 (Backspace)
     if (e.key === 'Backspace' || e.code === 'Backspace') {
       e.preventDefault();
       handleBackspace();
       return;
     }
 
-    // 3. Escape キー（全消去）
+    // 全消去 (Escape)
     if (e.key === 'Escape' || e.code === 'Escape') {
       e.preventDefault();
       handleClear();
       return;
     }
 
-    // 4. Space キー（未確定ローマ字の確定）
+    // スペースキー (未確定ローマ字の確定)
     if (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space') {
       e.preventDefault();
       flushRomajiBuffer();
       return;
     }
 
-    // 5. 直接のかな入力（かな入力キーボードやIME確定後の文字）
+    // 【文字キー判定】
+    // 直接のかな入力（かな入力キーボードやIME確定後の文字）
     if (e.key && /^[ぁ-ゖ]$/.test(e.key)) {
       e.preventDefault();
       handleCharInput(e.key);
@@ -5513,13 +5523,13 @@ function initInputListeners() {
       return;
     }
 
-    // 6. アルファベット・長音キー（e.key または 物理キー e.code から確実に判定）
+    // アルファベット・長音キー（e.key または 物理キー e.code から確実に判定）
     let letter = '';
     if (e.key && /^[a-zA-Z\-]$/.test(e.key)) {
       letter = e.key.toLowerCase();
     } else if (e.code && e.code.startsWith('Key')) {
-      // Windows/Macで日本語IMEがON（e.keyCode === 229 や e.key === 'Process'）でも、
-      // 物理キー e.code ('KeyA'〜'KeyZ') から正確に文字を拾う！
+      // 日本語IMEがON（e.keyCode === 229 や e.key === 'Process'）でも、
+      // 物理キー e.code ('KeyA'〜'KeyZ') から100%確実に文字をダイレクト取得！
       letter = e.code.replace('Key', '').toLowerCase();
     } else if (e.code === 'Minus' || e.code === 'NumpadSubtract') {
       letter = '-';
@@ -5921,7 +5931,11 @@ function initBattleSession() {
     elCourse.textContent = names[gameState.currentMode] || '🚀 漢字バトル';
   }
 
-  updateBgmState('battle');
+  try {
+    updateBgmState('battle');
+  } catch (e) {
+    console.warn('updateBgmState failed:', e);
+  }
   loadQuestion();
 }
 
@@ -7062,9 +7076,11 @@ function applyCustomizationStyles() {
   const shipColors = getShipColors(gameState.shipId);
   const laserColors = getLaserColors(gameState.laserId);
 
-  document.documentElement.style.setProperty('--player-ship-stroke', shipColors.stroke);
-  document.documentElement.style.setProperty('--player-laser-stroke', laserColors.stroke);
-  document.documentElement.style.setProperty('--player-laser-core', laserColors.core);
+  if (document.documentElement && document.documentElement.style) {
+    document.documentElement.style.setProperty('--player-ship-stroke', shipColors.stroke);
+    document.documentElement.style.setProperty('--player-laser-stroke', laserColors.stroke);
+    document.documentElement.style.setProperty('--player-laser-core', laserColors.core);
+  }
 
   const curShip = SHIPS_DATA.find(s => s.id === gameState.shipId);
   const elDisplay = document.getElementById('home-custom-display');
@@ -7579,9 +7595,9 @@ function changeMyGrade(val) {
 // 初期化
 // --------------------------------------------------------------------------
 function initGame() {
-  loadUserData();
-  initCanvas();
-  initInputListeners();
+  try { loadUserData(); } catch (e) { console.warn('loadUserData error:', e); }
+  try { initCanvas(); } catch (e) { console.warn('initCanvas error:', e); }
+  try { initInputListeners(); } catch (e) { console.warn('initInputListeners error:', e); }
 
   const soundBtn = document.getElementById('sound-toggle-btn');
   if (soundBtn) {
