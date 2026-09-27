@@ -426,7 +426,29 @@
 
     .char-slot.active {
       border-color: var(--neon-yellow);
+      box-shadow: 0 0 12px rgba(255, 230, 0, 0.6);
       animation: slotPulse 0.8s infinite alternate;
+    }
+
+    .slot-cursor {
+      display: inline-block;
+      color: var(--neon-yellow);
+      animation: cursorBlink 0.75s infinite;
+      font-weight: 300;
+      margin-left: 1px;
+    }
+
+    @keyframes cursorBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    .slot-pending-key {
+      color: var(--neon-yellow);
+      font-size: 0.82em;
+      font-family: 'Courier New', monospace, sans-serif;
+      text-shadow: 0 0 8px rgba(255, 230, 0, 0.9);
+      letter-spacing: -0.5px;
     }
 
     .char-slot.wrong {
@@ -2312,17 +2334,27 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      font-size: 13px;
-      color: #a4c8e0;
-      margin: 4px auto 2px auto;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #b8e2ff;
+      margin: 4px auto 3px auto;
       text-align: center;
-      min-height: 28px;
-      padding: 3px 14px;
-      background: rgba(0, 24, 48, 0.85);
-      border: 1px solid var(--player-ship-stroke, rgba(0, 229, 255, 0.4));
+      min-height: 30px;
+      padding: 4px 16px;
+      background: rgba(0, 24, 48, 0.92);
+      border: 1.5px solid var(--player-ship-stroke, rgba(0, 229, 255, 0.5));
       border-radius: 20px;
-      white-space: nowrap;
-      box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+      white-space: normal;
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+      transition: all 0.2s ease;
+      max-width: 95%;
+    }
+
+    .typing-preview-bar.ready {
+      border-color: #00ff88;
+      color: #00ff88;
+      box-shadow: 0 0 16px rgba(0, 255, 136, 0.4);
+      background: rgba(0, 36, 20, 0.92);
     }
 
     .typing-key-badge {
@@ -3342,7 +3374,7 @@
       <button class="action-btn btn-fire" id="btn-submit" onclick="handleSubmitAnswer()">💥 はっしゃ！</button>
     </div>
     <!-- キーボード入力中リアルタイム表示バー -->
-    <div class="typing-preview-bar" id="typing-preview-bar" style="display: none;"></div>
+    <div class="typing-preview-bar" id="typing-preview-bar">⌨️ キーボードでローマ字・ひらがな入力できます</div>
 
     <!-- 入力モード切り替えタブ (小学生が見てすぐ選べる) -->
     <div class="input-mode-tabs">
@@ -5353,16 +5385,24 @@ function focusHiddenInput() {
 
 function initInputListeners() {
   const hiddenInput = document.getElementById('hidden-input');
-  let isComposing = false;
+  gameState.isImeComposing = false;
 
   if (hiddenInput) {
-    // 日本語IME 確定イベント (スマホ/PC IME対応)
+    // 日本語IME 確定・変換中イベント
     hiddenInput.addEventListener('compositionstart', () => {
-      isComposing = true;
+      gameState.isImeComposing = true;
+    });
+
+    hiddenInput.addEventListener('compositionupdate', (e) => {
+      const bar = document.getElementById('typing-preview-bar');
+      if (bar && e.data) {
+        bar.classList.remove('ready');
+        bar.innerHTML = `🇯🇵 日本語変換中: <span class="typing-key-badge">${e.data}</span> ➔ Enterキーで確定`;
+      }
     });
 
     hiddenInput.addEventListener('compositionend', (e) => {
-      isComposing = false;
+      gameState.isImeComposing = false;
       const committed = e.data || hiddenInput.value;
       if (committed) {
         for (let ch of committed) {
@@ -5375,10 +5415,11 @@ function initInputListeners() {
         }
       }
       hiddenInput.value = '';
+      updateAnswerSlotsDisplay();
     });
 
     hiddenInput.addEventListener('input', (e) => {
-      if (isComposing || e.isComposing) return;
+      if (gameState.isImeComposing || e.isComposing) return;
       const val = hiddenInput.value;
       if (val) {
         for (let ch of val) {
@@ -5390,11 +5431,12 @@ function initInputListeners() {
           }
         }
         hiddenInput.value = '';
+        updateAnswerSlotsDisplay();
       }
     });
 
     hiddenInput.addEventListener('keydown', (e) => {
-      if (e.isComposing || e.keyCode === 229) {
+      if (gameState.isImeComposing || e.isComposing || e.keyCode === 229) {
         e.stopPropagation();
         return;
       }
@@ -5403,16 +5445,15 @@ function initInputListeners() {
 
   // 物理キーボード / PCキー入力（フォーカスが外れていてもグローバルに常時反応）
   window.addEventListener('keydown', (e) => {
-    // フォーム操作中やIME変換中はブラウザ本来の挙動を優先
+    // フォーム操作中（ドロップダウン等）はブラウザ標準挙動
     if (e.target && e.target.tagName === 'SELECT') return;
-    if (e.target && e.target.tagName === 'INPUT' && e.target.id !== 'hidden-input') return;
     if (e.target && e.target.tagName === 'TEXTAREA') return;
-    if (e.isComposing || e.keyCode === 229) return;
-    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.target && e.target.tagName === 'INPUT' && e.target.id !== 'hidden-input') return;
 
-    // ゲームバトル中かつ問題出題中のみ受付
+    // ゲームバトル中かつ出題中のみ受付
     if (!gameState.currentQuestion || gameState.isProcessingAnswer) return;
 
+    // モーダル表示中は除外
     const startModal = document.getElementById('start-modal');
     if (startModal && startModal.style.display !== 'none') return;
     const resModal = document.getElementById('result-modal');
@@ -5420,41 +5461,47 @@ function initInputListeners() {
     const confirmModal = document.getElementById('confirm-quit-modal');
     if (confirmModal && confirmModal.style.display !== 'none') return;
 
-    // 発射・決定
-    if (e.key === 'Enter') {
+    // 日本語IME変換中の場合はIMEに委ねる
+    if (gameState.isImeComposing) return;
+
+    // ブラウザのショートカットキー（Ctrl+R, Ctrl+W, Meta等）は阻害しない
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+    // 1. Enter キー（発射）
+    if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter') {
       e.preventDefault();
       handleSubmitAnswer();
       return;
     }
 
-    // 1文字削除
-    if (e.key === 'Backspace') {
+    // 2. Backspace キー（1文字削除）
+    if (e.key === 'Backspace' || e.code === 'Backspace') {
       e.preventDefault();
       handleBackspace();
       return;
     }
 
-    // 全消去
-    if (e.key === 'Escape') {
+    // 3. Escape キー（全消去）
+    if (e.key === 'Escape' || e.code === 'Escape') {
       e.preventDefault();
       handleClear();
       return;
     }
 
-    // スペースキーで未確定ローマ字を確定
-    if (e.key === ' ' || e.key === 'Spacebar') {
+    // 4. Space キー（未確定ローマ字の確定）
+    if (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space') {
       e.preventDefault();
       flushRomajiBuffer();
       return;
     }
 
-    // 日本語かな直打ち対応（かな入力キーボード等）
-    if (/^[぀-ゟ]$/.test(e.key)) {
+    // 5. 直接のかな入力（かな入力キーボードやIME確定後の文字）
+    if (e.key && /^[ぁ-ゖ]$/.test(e.key)) {
       e.preventDefault();
       handleCharInput(e.key);
       return;
     }
-    if (/^[゠-ヿ]$/.test(e.key)) {
+    if (e.key && /^[ァ-ヶ]$/.test(e.key)) {
       e.preventDefault();
       const hira = String.fromCharCode(e.key.charCodeAt(0) - 0x60);
       handleCharInput(hira);
@@ -5466,10 +5513,21 @@ function initInputListeners() {
       return;
     }
 
-    // ローマ字入力（アルファベット a-z, ハイフン）
-    if (/^[a-zA-Z\-]$/.test(e.key)) {
+    // 6. アルファベット・長音キー（e.key または 物理キー e.code から確実に判定）
+    let letter = '';
+    if (e.key && /^[a-zA-Z\-]$/.test(e.key)) {
+      letter = e.key.toLowerCase();
+    } else if (e.code && e.code.startsWith('Key')) {
+      // Windows/Macで日本語IMEがON（e.keyCode === 229 や e.key === 'Process'）でも、
+      // 物理キー e.code ('KeyA'〜'KeyZ') から正確に文字を拾う！
+      letter = e.code.replace('Key', '').toLowerCase();
+    } else if (e.code === 'Minus' || e.code === 'NumpadSubtract') {
+      letter = '-';
+    }
+
+    if (letter) {
       e.preventDefault();
-      processRomajiKey(e.key.toLowerCase());
+      processRomajiKey(letter);
       return;
     }
   });
@@ -5512,7 +5570,7 @@ function processRomajiKey(k) {
     if (k === 'n' || k === "'") {
       handleCharInput('ん');
       gameState.romajiBuffer = '';
-      updateTypingPreview();
+      updateAnswerSlotsDisplay();
       return;
     } else if (!'aiueoy'.includes(k)) {
       handleCharInput('ん');
@@ -5526,7 +5584,7 @@ function processRomajiKey(k) {
     if (lastChar === k && 'bcdfghjklmpqrstvwxyz'.includes(k) && k !== 'n') {
       handleCharInput('っ');
       gameState.romajiBuffer = k;
-      updateTypingPreview();
+      updateAnswerSlotsDisplay();
       return;
     }
   }
@@ -5537,7 +5595,7 @@ function processRomajiKey(k) {
   if (gameState.romajiBuffer === 'nn' || gameState.romajiBuffer === 'xn') {
     handleCharInput('ん');
     gameState.romajiBuffer = '';
-    updateTypingPreview();
+    updateAnswerSlotsDisplay();
     return;
   }
 
@@ -5551,7 +5609,7 @@ function processRomajiKey(k) {
     gameState.romajiBuffer = gameState.romajiBuffer.slice(-1);
   }
 
-  updateTypingPreview();
+  updateAnswerSlotsDisplay();
 }
 
 function flushRomajiBuffer() {
@@ -5559,22 +5617,34 @@ function flushRomajiBuffer() {
   if (gameState.romajiBuffer === 'n' || gameState.romajiBuffer === 'nn' || gameState.romajiBuffer === 'xn') {
     handleCharInput('ん');
     gameState.romajiBuffer = '';
-    updateTypingPreview();
   } else if (ROMAJI_TABLE[gameState.romajiBuffer]) {
     handleCharInput(ROMAJI_TABLE[gameState.romajiBuffer]);
     gameState.romajiBuffer = '';
-    updateTypingPreview();
   }
+  updateAnswerSlotsDisplay();
 }
 
 function updateTypingPreview() {
   const bar = document.getElementById('typing-preview-bar');
-  if (!bar) return;
-  if (gameState.romajiBuffer) {
-    bar.style.display = 'inline-flex';
-    bar.innerHTML = `入力中: <span class="typing-key-badge">${gameState.romajiBuffer.toUpperCase()}</span> <span class="typing-arrow">➔</span> <span class="typing-result">（変換待ち）</span>`;
+  if (!bar || !gameState.currentQuestion) return;
+
+  bar.style.display = 'inline-flex';
+  const targetLen = gameState.currentQuestion.kana.length;
+  const currentLen = gameState.currentAnswer.length;
+
+  if (currentLen === targetLen) {
+    bar.classList.add('ready');
+    bar.innerHTML = `🚀 <strong style="color:#00ff88;">全 ${targetLen} 文字 入力完了！</strong> ➔ <span class="typing-key-badge">Enter</span> または「💥 はっしゃ！」で発射！`;
+  } else if (gameState.romajiBuffer) {
+    bar.classList.remove('ready');
+    const buf = gameState.romajiBuffer.toUpperCase();
+    bar.innerHTML = `⌨️ 入力中: <span class="typing-key-badge">${buf}</span> ➔ 次に母音 <span class="typing-key-badge">A</span><span class="typing-key-badge">I</span><span class="typing-key-badge">U</span><span class="typing-key-badge">E</span><span class="typing-key-badge">O</span> を押すとひらがなになります`;
+  } else if (currentLen > 0) {
+    bar.classList.remove('ready');
+    bar.innerHTML = `🟢 <strong>${currentLen} / ${targetLen} 文字</strong> 入力中: 「<span style="color:#ffe600; font-size:15px; font-weight:900;">${gameState.currentAnswer}</span>」 (あと ${targetLen - currentLen} 文字)`;
   } else {
-    bar.style.display = 'none';
+    bar.classList.remove('ready');
+    bar.innerHTML = `⌨️ キーボードで入力中: あと <strong style="color:#ffe600;">${targetLen} 文字</strong> (ローマ字・ひらがな・下の文字パネル)`;
   }
 }
 
@@ -5594,7 +5664,8 @@ function handleBackspace() {
   if (gameState.isProcessingAnswer) return;
   if (gameState.romajiBuffer.length > 0) {
     gameState.romajiBuffer = gameState.romajiBuffer.slice(0, -1);
-    updateTypingPreview();
+    playSound('click');
+    updateAnswerSlotsDisplay();
     return;
   }
   if (gameState.currentAnswer.length > 0) {
@@ -5609,7 +5680,6 @@ function handleClear() {
   gameState.currentAnswer = '';
   gameState.romajiBuffer = '';
   playSound('click');
-  updateTypingPreview();
   updateAnswerSlotsDisplay();
 }
 
@@ -5639,30 +5709,52 @@ function updateAnswerSlotsDisplay() {
 
   const slots = container.querySelectorAll('.char-slot');
   const targetLen = gameState.currentQuestion.kana.length;
+  const currentLen = gameState.currentAnswer.length;
 
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i];
-    const ch = gameState.currentAnswer[i] || '';
-    slot.textContent = ch;
     slot.classList.remove('active', 'filled', 'wrong');
 
-    if (ch) {
+    if (i < currentLen) {
+      // 確定済み文字
+      slot.textContent = gameState.currentAnswer[i];
       slot.classList.add('filled');
-    }
-    if (i === gameState.currentAnswer.length && i < targetLen) {
+    } else if (i === currentLen && currentLen < targetLen) {
+      // 現在入力中のアクティブスロット（ローマ字未確定キーやカーソルを視覚的に表示！）
       slot.classList.add('active');
+      if (gameState.romajiBuffer) {
+        slot.innerHTML = `<span class="slot-pending-key">${gameState.romajiBuffer.toUpperCase()}</span><span class="slot-cursor">|</span>`;
+      } else {
+        slot.innerHTML = `<span class="slot-cursor">|</span>`;
+      }
+    } else {
+      // 未入力スロット
+      slot.textContent = '';
     }
   }
 
   // 発射ボタンのパルス
   const btnFire = document.getElementById('btn-submit');
   if (btnFire) {
-    if (gameState.currentAnswer.length === targetLen) {
+    if (currentLen === targetLen) {
       btnFire.classList.add('ready-fire');
     } else {
       btnFire.classList.remove('ready-fire');
     }
   }
+
+  // 漢字パネル上の「文字数カウント」をリアルタイム更新 (例: 1 / 4 もじ)
+  const elCharsCount = document.getElementById('target-chars-count');
+  if (elCharsCount) {
+    if (currentLen === targetLen) {
+      elCharsCount.textContent = `全${targetLen}もじ完了！`;
+    } else {
+      elCharsCount.textContent = `${currentLen} / ${targetLen}もじ`;
+    }
+  }
+
+  // タイピングプレビュー・進捗バーのリアルタイム更新
+  updateTypingPreview();
 }
 
 
@@ -5913,6 +6005,9 @@ function loadQuestion() {
   startTimer();
 
   focusHiddenInput();
+
+  // スロット表示・文字数カウント・入力プレビューを即時更新
+  updateAnswerSlotsDisplay();
 }
 
 function setupAnswerSlots(len) {
