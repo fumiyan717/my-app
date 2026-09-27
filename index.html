@@ -493,6 +493,17 @@
       animation: firePulse 0.6s infinite alternate;
     }
 
+    @keyframes shakeEmpty {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    .shake-empty {
+      animation: shakeEmpty 0.35s ease-in-out !important;
+    }
+
+
     @keyframes firePulse {
       from { box-shadow: 0 0 15px var(--player-laser-stroke, #ff5500); transform: scale(1); }
       to { box-shadow: 0 0 28px #ffe600; transform: scale(1.05); }
@@ -3326,9 +3337,9 @@
       <div class="answer-slots-container" id="answer-slots-container" onclick="focusHiddenInput()">
         <input type="text" id="hidden-input" class="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       </div>
-      <button class="action-btn btn-clear" id="btn-clear">ぜんぶ消す</button>
-      <button class="action-btn btn-backspace" id="btn-backspace">⌫ 1文字</button>
-      <button class="action-btn btn-fire" id="btn-submit">💥 はっしゃ！</button>
+      <button class="action-btn btn-clear" id="btn-clear" onclick="handleClear()">ぜんぶ消す</button>
+      <button class="action-btn btn-backspace" id="btn-backspace" onclick="handleBackspace()">⌫ 1文字</button>
+      <button class="action-btn btn-fire" id="btn-submit" onclick="handleSubmitAnswer()">💥 はっしゃ！</button>
     </div>
     <!-- キーボード入力中リアルタイム表示バー -->
     <div class="typing-preview-bar" id="typing-preview-bar" style="display: none;"></div>
@@ -3352,67 +3363,67 @@
     <div class="keyboard-container" id="soft-keyboard" style="display: none;">
       <!-- 1行目: あ〜お、が〜ご -->
       <div class="kb-row">
-        <button class="kb-key" data-char="あ">あ</button>
-        <button class="kb-key" data-char="い">い</button>
-        <button class="kb-key" data-char="う">う</button>
-        <button class="kb-key" data-char="え">え</button>
-        <button class="kb-key" data-char="お">お</button>
-        <button class="kb-key" data-char="か">か</button>
-        <button class="kb-key" data-char="き">き</button>
-        <button class="kb-key" data-char="く">く</button>
-        <button class="kb-key" data-char="け">け</button>
-        <button class="kb-key" data-char="こ">こ</button>
+        <button class="kb-key" data-char="あ" onclick="handleCharInput('あ')">あ</button>
+        <button class="kb-key" data-char="い" onclick="handleCharInput('い')">い</button>
+        <button class="kb-key" data-char="う" onclick="handleCharInput('う')">う</button>
+        <button class="kb-key" data-char="え" onclick="handleCharInput('え')">え</button>
+        <button class="kb-key" data-char="お" onclick="handleCharInput('お')">お</button>
+        <button class="kb-key" data-char="か" onclick="handleCharInput('か')">か</button>
+        <button class="kb-key" data-char="き" onclick="handleCharInput('き')">き</button>
+        <button class="kb-key" data-char="く" onclick="handleCharInput('く')">く</button>
+        <button class="kb-key" data-char="け" onclick="handleCharInput('け')">け</button>
+        <button class="kb-key" data-char="こ" onclick="handleCharInput('こ')">こ</button>
       </div>
       <!-- 2行目: さ〜と -->
       <div class="kb-row">
-        <button class="kb-key" data-char="さ">さ</button>
-        <button class="kb-key" data-char="し">し</button>
-        <button class="kb-key" data-char="す">す</button>
-        <button class="kb-key" data-char="せ">せ</button>
-        <button class="kb-key" data-char="そ">そ</button>
-        <button class="kb-key" data-char="た">た</button>
-        <button class="kb-key" data-char="ち">ち</button>
-        <button class="kb-key" data-char="つ">つ</button>
-        <button class="kb-key" data-char="て">て</button>
-        <button class="kb-key" data-char="と">と</button>
+        <button class="kb-key" data-char="さ" onclick="handleCharInput('さ')">さ</button>
+        <button class="kb-key" data-char="し" onclick="handleCharInput('し')">し</button>
+        <button class="kb-key" data-char="す" onclick="handleCharInput('す')">す</button>
+        <button class="kb-key" data-char="せ" onclick="handleCharInput('せ')">せ</button>
+        <button class="kb-key" data-char="そ" onclick="handleCharInput('そ')">そ</button>
+        <button class="kb-key" data-char="た" onclick="handleCharInput('た')">た</button>
+        <button class="kb-key" data-char="ち" onclick="handleCharInput('ち')">ち</button>
+        <button class="kb-key" data-char="つ" onclick="handleCharInput('つ')">つ</button>
+        <button class="kb-key" data-char="て" onclick="handleCharInput('て')">て</button>
+        <button class="kb-key" data-char="と" onclick="handleCharInput('と')">と</button>
       </div>
       <!-- 3行目: な〜ほ -->
       <div class="kb-row">
-        <button class="kb-key" data-char="な">な</button>
-        <button class="kb-key" data-char="に">に</button>
-        <button class="kb-key" data-char="ぬ">ぬ</button>
-        <button class="kb-key" data-char="ね">ね</button>
-        <button class="kb-key" data-char="の">の</button>
-        <button class="kb-key" data-char="は">は</button>
-        <button class="kb-key" data-char="ひ">ひ</button>
-        <button class="kb-key" data-char="ふ">ふ</button>
-        <button class="kb-key" data-char="へ">へ</button>
-        <button class="kb-key" data-char="ほ">ほ</button>
+        <button class="kb-key" data-char="な" onclick="handleCharInput('な')">な</button>
+        <button class="kb-key" data-char="に" onclick="handleCharInput('に')">に</button>
+        <button class="kb-key" data-char="ぬ" onclick="handleCharInput('ぬ')">ぬ</button>
+        <button class="kb-key" data-char="ね" onclick="handleCharInput('ね')">ね</button>
+        <button class="kb-key" data-char="の" onclick="handleCharInput('の')">の</button>
+        <button class="kb-key" data-char="は" onclick="handleCharInput('は')">は</button>
+        <button class="kb-key" data-char="ひ" onclick="handleCharInput('ひ')">ひ</button>
+        <button class="kb-key" data-char="ふ" onclick="handleCharInput('ふ')">ふ</button>
+        <button class="kb-key" data-char="へ" onclick="handleCharInput('へ')">へ</button>
+        <button class="kb-key" data-char="ほ" onclick="handleCharInput('ほ')">ほ</button>
       </div>
       <!-- 4行目: ま〜よ -->
       <div class="kb-row">
-        <button class="kb-key" data-char="ま">ま</button>
-        <button class="kb-key" data-char="み">み</button>
-        <button class="kb-key" data-char="む">む</button>
-        <button class="kb-key" data-char="め">め</button>
-        <button class="kb-key" data-char="も">も</button>
-        <button class="kb-key" data-char="や">や</button>
-        <button class="kb-key" data-char="ゆ">ゆ</button>
-        <button class="kb-key" data-char="よ">よ</button>
-        <button class="kb-key" data-char="ー">ー</button>
-        <button class="kb-key special" id="btn-dakuten">゛゜濁点</button>
+        <button class="kb-key" data-char="ま" onclick="handleCharInput('ま')">ま</button>
+        <button class="kb-key" data-char="み" onclick="handleCharInput('み')">み</button>
+        <button class="kb-key" data-char="む" onclick="handleCharInput('む')">む</button>
+        <button class="kb-key" data-char="め" onclick="handleCharInput('め')">め</button>
+        <button class="kb-key" data-char="も" onclick="handleCharInput('も')">も</button>
+        <button class="kb-key" data-char="や" onclick="handleCharInput('や')">や</button>
+        <button class="kb-key" data-char="ゆ" onclick="handleCharInput('ゆ')">ゆ</button>
+        <button class="kb-key" data-char="よ" onclick="handleCharInput('よ')">よ</button>
+        <button class="kb-key" data-char="ー" onclick="handleCharInput('ー')">ー</button>
+        <button class="kb-key special" id="btn-dakuten" onclick="toggleDakuten()">゛゜濁点</button>
       </div>
       <!-- 5行目: ら〜ん、小文字 -->
       <div class="kb-row">
-        <button class="kb-key" data-char="ら">ら</button>
-        <button class="kb-key" data-char="り">り</button>
-        <button class="kb-key" data-char="る">る</button>
-        <button class="kb-key" data-char="れ">れ</button>
-        <button class="kb-key" data-char="ろ">ろ</button>
-        <button class="kb-key" data-char="わ">わ</button>
-        <button class="kb-key" data-char="を">を</button>
-        <button class="kb-key" data-char="ん">ん</button>
-        <button class="kb-key special" id="btn-komoji">小文字 ゃゅょっ</button>
+        <button class="kb-key" data-char="ら" onclick="handleCharInput('ら')">ら</button>
+        <button class="kb-key" data-char="り" onclick="handleCharInput('り')">り</button>
+        <button class="kb-key" data-char="る" onclick="handleCharInput('る')">る</button>
+        <button class="kb-key" data-char="れ" onclick="handleCharInput('れ')">れ</button>
+        <button class="kb-key" data-char="ろ" onclick="handleCharInput('ろ')">ろ</button>
+        <button class="kb-key" data-char="わ" onclick="handleCharInput('わ')">わ</button>
+        <button class="kb-key" data-char="を" onclick="handleCharInput('を')">を</button>
+        <button class="kb-key" data-char="ん" onclick="handleCharInput('ん')">ん</button>
+        <button class="kb-key special" id="btn-komoji" onclick="toggleKomoji()">小文字 ゃゅょっ</button>
       </div>
     </div>
   </footer>
@@ -5224,35 +5235,65 @@ function createExplosion(x, y) {
 // 入力システム (ローマ字変換・かんたん文字パネル・50音キーボード)
 // ==========================================================================
 
-// ローマ字 -> ひらがな 完全辞書
+// ローマ字 -> ひらがな 完全対応辞書
 const ROMAJI_TABLE = {
+  // あ行
   "a":"あ","i":"い","u":"う","e":"え","o":"お",
+  // か行・が行
   "ka":"か","ki":"き","ku":"く","ke":"け","ko":"こ",
-  "sa":"さ","shi":"し","si":"し","su":"す","se":"せ","so":"そ",
-  "ta":"た","chi":"ち","ti":"ち","tsu":"つ","tu":"つ","te":"て","to":"と",
-  "na":"な","ni":"に","nu":"ぬ","ne":"ね","no":"の",
-  "ha":"は","hi":"ひ","fu":"ふ","hu":"ふ","he":"へ","ho":"ほ",
-  "ma":"ま","mi":"み","mu":"む","me":"め","mo":"も",
-  "ya":"や","yu":"ゆ","yo":"よ",
-  "ra":"ら","ri":"り","ru":"る","re":"れ","ro":"ろ",
-  "wa":"わ","wo":"を","nn":"ん","xn":"ん",
   "ga":"が","gi":"ぎ","gu":"ぐ","ge":"げ","go":"ご",
+  // さ行・ざ行
+  "sa":"さ","shi":"し","si":"し","su":"す","se":"せ","so":"そ",
   "za":"ざ","ji":"じ","zi":"じ","zu":"ず","ze":"ぜ","zo":"ぞ",
+  // た行・だ行
+  "ta":"た","chi":"ち","ti":"ち","tsu":"つ","tu":"つ","te":"て","to":"と",
   "da":"だ","di":"ぢ","du":"づ","de":"で","do":"ど",
+  // な行
+  "na":"な","ni":"に","nu":"ぬ","ne":"ね","no":"の",
+  // は行・ば行・ぱ行
+  "ha":"は","hi":"ひ","fu":"ふ","hu":"ふ","he":"へ","ho":"ほ",
   "ba":"ば","bi":"び","bu":"ぶ","be":"べ","bo":"ぼ",
   "pa":"ぱ","pi":"ぴ","pu":"ぷ","pe":"ぺ","po":"ぽ",
-  "kya":"きゃ","kyu":"きゅ","kyo":"きょ",
-  "sha":"しゃ","syu":"しゅ","shu":"しゅ","sho":"しょ","syo":"しょ",
-  "cha":"ちゃ","chu":"ちゅ","tyu":"ちゅ","cho":"ちょ","tyo":"ちょ",
-  "nya":"にゃ","nyu":"にゅ","nyo":"にょ",
-  "hya":"ひゃ","hyu":"ひゅ","hyo":"ひょ",
-  "mya":"みゃ","myu":"みゅ","myo":"みょ",
-  "rya":"りゃ","ryu":"りゅ","ryo":"りょ",
-  "gya":"ぎゃ","gyu":"ぎゅ","gyo":"ぎょ",
-  "ja":"じゃ","zya":"じゃ","ju":"じゅ","zyu":"じゅ","jo":"じょ","zyo":"じょ",
-  "bya":"びゃ","byu":"びゅ","byo":"びょ",
-  "pya":"ぴゃ","pyu":"ぴゅ","pyo":"ぴょ",
-  "xtsu":"っ","ltu":"っ","xtu":"っ","xya":"ゃ","xyu":"ゅ","xyo":"ょ","xwa":"ゎ",
+  // ま行
+  "ma":"ま","mi":"み","mu":"む","me":"め","mo":"も",
+  // や行
+  "ya":"や","yu":"ゆ","yo":"よ",
+  // ら行
+  "ra":"ら","ri":"り","ru":"る","re":"れ","ro":"ろ",
+  // わ行・ん
+  "wa":"わ","wo":"を","nn":"ん","xn":"ん",
+  // 拗音: きゃ・ぎゃ
+  "kya":"きゃ","kyu":"きゅ","kye":"きぇ","kyo":"きょ",
+  "gya":"ぎゃ","gyu":"ぎゅ","gye":"ぎぇ","gyo":"ぎょ",
+  // 拗音: しゃ・じゃ
+  "sha":"しゃ","syu":"しゅ","shu":"しゅ","sho":"しょ","syo":"しょ","sya":"しゃ","sye":"しぇ","she":"しぇ",
+  "ja":"じゃ","ju":"じゅ","je":"じぇ","jo":"じょ",
+  "jya":"じゃ","jyu":"じゅ","jye":"じぇ","jyo":"じょ",
+  "zya":"じゃ","zyu":"じゅ","zye":"じぇ","zyo":"じょ",
+  // 拗音: ちゃ
+  "cha":"ちゃ","chu":"ちゅ","che":"ちぇ","cho":"ちょ",
+  "tya":"ちゃ","tyu":"ちゅ","tye":"ちぇ","tyo":"ちょ",
+  "cya":"ちゃ","cyu":"ちゅ","cye":"ちぇ","cyo":"ちょ",
+  // 拗音: にゃ・ひゃ・びゃ・ぴゃ・みゃ・りゃ
+  "nya":"にゃ","nyu":"にゅ","nye":"にぇ","nyo":"にょ",
+  "hya":"ひゃ","hyu":"ひゅ","hye":"ひぇ","hyo":"ひょ",
+  "bya":"びゃ","byu":"びゅ","bye":"びぇ","byo":"びょ",
+  "pya":"ぴゃ","pyu":"ぴゅ","pye":"ぴぇ","pyo":"ぴょ",
+  "mya":"みゃ","myu":"みゅ","mye":"みぇ","myo":"みょ",
+  "rya":"りゃ","ryu":"りゅ","rye":"りぇ","ryo":"りょ",
+  "dya":"ぢゃ","dyu":"ぢゅ","dye":"ぢぇ","dyo":"ぢょ",
+  // 外来語・特殊
+  "fa":"ふぁ","fi":"ふぃ","fe":"ふぇ","fo":"ふぉ","fyu":"ふゅ",
+  "va":"ゔぁ","vi":"ゔぃ","vu":"ゔ","ve":"ゔぇ","vo":"ゔぉ",
+  "wi":"うぃ","we":"うぇ","who":"うぉ",
+  "tsa":"つぁ","tsi":"つぃ","tse":"つぇ","tso":"つぉ",
+  "thi":"てぃ","dhi":"でぃ","dhu":"どぅ",
+  // 促音・小文字
+  "xtsu":"っ","ltu":"っ","xtu":"っ","ltsu":"っ",
+  "xya":"ゃ","xyu":"ゅ","xyo":"ょ","lya":"ゃ","lyu":"ゅ","lyo":"ょ",
+  "xa":"ぁ","xi":"ぃ","xu":"ぅ","xe":"ぇ","xo":"ぉ",
+  "la":"ぁ","li":"ぃ","lu":"ぅ","le":"ぇ","lo":"ぉ",
+  "xwa":"ゎ","lwa":"ゎ",
   "-":"ー"
 };
 
@@ -5302,56 +5343,138 @@ function switchInputMode(mode) {
 function focusHiddenInput() {
   const hiddenInput = document.getElementById('hidden-input');
   if (hiddenInput) {
-    hiddenInput.focus();
+    try {
+      hiddenInput.focus({ preventScroll: true });
+    } catch (e) {
+      hiddenInput.focus();
+    }
   }
 }
 
 function initInputListeners() {
   const hiddenInput = document.getElementById('hidden-input');
+  let isComposing = false;
+
   if (hiddenInput) {
-    // 物理キーボード / IME入力
-    hiddenInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleSubmitAnswer();
-        return;
-      }
-      if (e.key === 'Backspace') {
-        e.preventDefault();
-        handleBackspace();
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        handleClear();
-        return;
-      }
-      // アルファベット単キー入力 (ローマ字エンジン)
-      if (/^[a-zA-Z\-]$/.test(e.key) && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        e.preventDefault();
-        processRomajiKey(e.key.toLowerCase());
-      }
+    // 日本語IME 確定イベント (スマホ/PC IME対応)
+    hiddenInput.addEventListener('compositionstart', () => {
+      isComposing = true;
     });
 
-    // 日本語IME直接入力フォールバック
+    hiddenInput.addEventListener('compositionend', (e) => {
+      isComposing = false;
+      const committed = e.data || hiddenInput.value;
+      if (committed) {
+        for (let ch of committed) {
+          if (/[ァ-ヶ]/.test(ch)) {
+            ch = String.fromCharCode(ch.charCodeAt(0) - 0x60);
+          }
+          if (/[ぁ-ゖー]/.test(ch)) {
+            handleCharInput(ch);
+          }
+        }
+      }
+      hiddenInput.value = '';
+    });
+
     hiddenInput.addEventListener('input', (e) => {
+      if (isComposing || e.isComposing) return;
       const val = hiddenInput.value;
       if (val) {
         for (let ch of val) {
-          // カタカナをひらがなに変換
-          if (/[\u30a1-\u30f6]/.test(ch)) {
+          if (/[ァ-ヶ]/.test(ch)) {
             ch = String.fromCharCode(ch.charCodeAt(0) - 0x60);
           }
-          if (/[\u3041-\u3096ー]/.test(ch)) {
+          if (/[ぁ-ゖー]/.test(ch)) {
             handleCharInput(ch);
           }
         }
         hiddenInput.value = '';
       }
     });
+
+    hiddenInput.addEventListener('keydown', (e) => {
+      if (e.isComposing || e.keyCode === 229) {
+        e.stopPropagation();
+        return;
+      }
+    });
   }
 
-  // 操作ボタン
+  // 物理キーボード / PCキー入力（フォーカスが外れていてもグローバルに常時反応）
+  window.addEventListener('keydown', (e) => {
+    // フォーム操作中やIME変換中はブラウザ本来の挙動を優先
+    if (e.target && e.target.tagName === 'SELECT') return;
+    if (e.target && e.target.tagName === 'INPUT' && e.target.id !== 'hidden-input') return;
+    if (e.target && e.target.tagName === 'TEXTAREA') return;
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+    // ゲームバトル中かつ問題出題中のみ受付
+    if (!gameState.currentQuestion || gameState.isProcessingAnswer) return;
+
+    const startModal = document.getElementById('start-modal');
+    if (startModal && startModal.style.display !== 'none') return;
+    const resModal = document.getElementById('result-modal');
+    if (resModal && resModal.style.display !== 'none') return;
+    const confirmModal = document.getElementById('confirm-quit-modal');
+    if (confirmModal && confirmModal.style.display !== 'none') return;
+
+    // 発射・決定
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmitAnswer();
+      return;
+    }
+
+    // 1文字削除
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      handleBackspace();
+      return;
+    }
+
+    // 全消去
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      handleClear();
+      return;
+    }
+
+    // スペースキーで未確定ローマ字を確定
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      flushRomajiBuffer();
+      return;
+    }
+
+    // 日本語かな直打ち対応（かな入力キーボード等）
+    if (/^[぀-ゟ]$/.test(e.key)) {
+      e.preventDefault();
+      handleCharInput(e.key);
+      return;
+    }
+    if (/^[゠-ヿ]$/.test(e.key)) {
+      e.preventDefault();
+      const hira = String.fromCharCode(e.key.charCodeAt(0) - 0x60);
+      handleCharInput(hira);
+      return;
+    }
+    if (e.key === 'ー') {
+      e.preventDefault();
+      handleCharInput('ー');
+      return;
+    }
+
+    // ローマ字入力（アルファベット a-z, ハイフン）
+    if (/^[a-zA-Z\-]$/.test(e.key)) {
+      e.preventDefault();
+      processRomajiKey(e.key.toLowerCase());
+      return;
+    }
+  });
+
+  // 操作ボタンのイベントリスナー
   const btnClear = document.getElementById('btn-clear');
   if (btnClear) btnClear.addEventListener('click', handleClear);
 
@@ -5384,20 +5507,34 @@ function initInputListeners() {
 }
 
 function processRomajiKey(k) {
-  gameState.romajiBuffer += k;
-
-  // 促音 (っ) の処理: 連続する子音 (例: 'tt' -> 'っ' + 't')
-  if (gameState.romajiBuffer.length >= 2) {
-    const c1 = gameState.romajiBuffer[0];
-    const c2 = gameState.romajiBuffer[1];
-    if (c1 === c2 && 'bcdfghjklmpqrstvwxyz'.includes(c1) && c1 !== 'n') {
-      handleCharInput('っ');
-      gameState.romajiBuffer = c2;
+  // 'n' がバッファにあり、次に続くキーが母音 (aiueo) や 'y' 以外の子音なら 'ん' を確定
+  if (gameState.romajiBuffer === 'n') {
+    if (k === 'n' || k === "'") {
+      handleCharInput('ん');
+      gameState.romajiBuffer = '';
+      updateTypingPreview();
+      return;
+    } else if (!'aiueoy'.includes(k)) {
+      handleCharInput('ん');
+      gameState.romajiBuffer = '';
     }
   }
 
-  // 'nn' または 子音の前にある 'n' の処理
-  if (gameState.romajiBuffer === 'nn') {
+  // 促音 (っ) の処理: 連続する子音 (例: 'tt' -> 'っ' + 't', 'kk' -> 'っ' + 'k')
+  if (gameState.romajiBuffer.length >= 1) {
+    const lastChar = gameState.romajiBuffer[gameState.romajiBuffer.length - 1];
+    if (lastChar === k && 'bcdfghjklmpqrstvwxyz'.includes(k) && k !== 'n') {
+      handleCharInput('っ');
+      gameState.romajiBuffer = k;
+      updateTypingPreview();
+      return;
+    }
+  }
+
+  gameState.romajiBuffer += k;
+
+  // 'nn' または 'xn' で 'ん'
+  if (gameState.romajiBuffer === 'nn' || gameState.romajiBuffer === 'xn') {
     handleCharInput('ん');
     gameState.romajiBuffer = '';
     updateTypingPreview();
@@ -5410,11 +5547,24 @@ function processRomajiKey(k) {
     handleCharInput(hira);
     gameState.romajiBuffer = '';
   } else if (gameState.romajiBuffer.length >= 4) {
-    // マッチしない余剰キーのリセット
+    // どのキーともマッチしない余剰キーのリセット
     gameState.romajiBuffer = gameState.romajiBuffer.slice(-1);
   }
 
   updateTypingPreview();
+}
+
+function flushRomajiBuffer() {
+  if (!gameState.romajiBuffer) return;
+  if (gameState.romajiBuffer === 'n' || gameState.romajiBuffer === 'nn' || gameState.romajiBuffer === 'xn') {
+    handleCharInput('ん');
+    gameState.romajiBuffer = '';
+    updateTypingPreview();
+  } else if (ROMAJI_TABLE[gameState.romajiBuffer]) {
+    handleCharInput(ROMAJI_TABLE[gameState.romajiBuffer]);
+    gameState.romajiBuffer = '';
+    updateTypingPreview();
+  }
 }
 
 function updateTypingPreview() {
@@ -5850,10 +6000,31 @@ function handleSubmitAnswer() {
   if (gameState.isProcessingAnswer) return;
   if (!gameState.currentQuestion) return;
 
+  // 入力中のローマ字（末尾の 'n' など）があれば確定
+  flushRomajiBuffer();
+
   const userAns = gameState.currentAnswer.trim();
   const targetKana = gameState.currentQuestion.kana;
 
-  if (userAns.length === 0) return;
+  // 未入力の場合は音とアニメーションでわかりやすくフィードバック
+  if (userAns.length === 0) {
+    playSound('click');
+    const container = document.getElementById('answer-slots-container');
+    if (container) {
+      container.classList.remove('shake-empty');
+      void container.offsetWidth; // リフロー強制
+      container.classList.add('shake-empty');
+      setTimeout(() => container.classList.remove('shake-empty'), 400);
+    }
+    const btnSubmit = document.getElementById('btn-submit');
+    if (btnSubmit) {
+      btnSubmit.classList.remove('shake-empty');
+      void btnSubmit.offsetWidth;
+      btnSubmit.classList.add('shake-empty');
+      setTimeout(() => btnSubmit.classList.remove('shake-empty'), 400);
+    }
+    return;
+  }
 
   // 正解判定
   if (userAns === targetKana) {
@@ -7312,7 +7483,7 @@ function changeMyGrade(val) {
 // --------------------------------------------------------------------------
 // 初期化
 // --------------------------------------------------------------------------
-window.addEventListener('DOMContentLoaded', () => {
+function initGame() {
   loadUserData();
   initCanvas();
   initInputListeners();
@@ -7322,11 +7493,23 @@ window.addEventListener('DOMContentLoaded', () => {
     soundBtn.addEventListener('click', toggleSound);
   }
 
-  // 画面クリックでオーディオコンテキスト再開
-  window.addEventListener('pointerdown', () => {
+  // 画面クリックでオーディオコンテキスト再開 ＆ フォーカス補助
+  window.addEventListener('pointerdown', (e) => {
     getAudioContext();
-  }, { once: true });
-});
+    if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.closest('button') || e.target.closest('.modal-overlay'))) {
+      return;
+    }
+    if (gameState.currentQuestion && !gameState.isProcessingAnswer) {
+      focusHiddenInput();
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGame);
+} else {
+  initGame();
+}
 
 </script>
 </body>
