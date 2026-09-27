@@ -4657,6 +4657,9 @@ const gameState = {
   isProcessingAnswer: false,
   soundEnabled: true,
   currentInputMode: 'blocks', // 'blocks' or 'keyboard'
+  lastInputChar: '',
+  lastInputTime: 0,
+  lastRomajiKeyHandledTime: 0,
   
   // カスタマイズ
   shipId: 'hawk',
@@ -5385,8 +5388,11 @@ function switchInputMode(mode) {
 }
 
 function focusHiddenInput() {
+  // タッチデバイス（スマホ・タブレット）の場合のみ仮想キーボード表示のためフォーカス
+  // デスクトップPCはグローバルkeydownで直接ローマ字変換するためフォーカス不要（IME重複防止）
+  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
   const hiddenInput = document.getElementById('hidden-input');
-  if (hiddenInput) {
+  if (hiddenInput && isTouchDevice) {
     try {
       hiddenInput.focus({ preventScroll: true });
     } catch (e) {
@@ -5399,38 +5405,44 @@ function initInputListeners() {
   const hiddenInput = document.getElementById('hidden-input');
 
   if (hiddenInput) {
-    // 仮想キーボードや音声入力・IME確定からの入力フォールバック
-    hiddenInput.addEventListener('input', (e) => {
-      const val = hiddenInput.value;
-      if (val) {
-        for (let ch of val) {
-          if (/[ァ-ヶ]/.test(ch)) {
-            ch = String.fromCharCode(ch.charCodeAt(0) - 0x60);
-          }
-          if (/[ぁ-ゖー]/.test(ch)) {
-            handleCharInput(ch);
-          }
-        }
-        hiddenInput.value = '';
-        updateAnswerSlotsDisplay();
+    let isComposing = false;
+
+    function processHiddenInputValue(text) {
+      if (!text) return;
+      // 物理キーボードで直前（250ms以内）にキー処理された場合は重複なので無視
+      if (performance.now() - gameState.lastRomajiKeyHandledTime < 250) {
+        return;
       }
+      for (let ch of text) {
+        if (/[ァ-ヶ]/.test(ch)) {
+          ch = String.fromCharCode(ch.charCodeAt(0) - 0x60);
+        }
+        if (/[ぁ-ゖー]/.test(ch)) {
+          handleCharInput(ch, true);
+        }
+      }
+      updateAnswerSlotsDisplay();
+    }
+
+    hiddenInput.addEventListener('compositionstart', () => {
+      isComposing = true;
     });
 
-    // 日本語IME 確定イベント
     hiddenInput.addEventListener('compositionend', (e) => {
+      isComposing = false;
       const committed = e.data || hiddenInput.value;
-      if (committed) {
-        for (let ch of committed) {
-          if (/[ァ-ヶ]/.test(ch)) {
-            ch = String.fromCharCode(ch.charCodeAt(0) - 0x60);
-          }
-          if (/[ぁ-ゖー]/.test(ch)) {
-            handleCharInput(ch);
-          }
-        }
-      }
       hiddenInput.value = '';
-      updateAnswerSlotsDisplay();
+      processHiddenInputValue(committed);
+    });
+
+    // 仮想キーボードや音声入力・確定入力フォールバック
+    hiddenInput.addEventListener('input', (e) => {
+      if (isComposing || e.isComposing) {
+        return;
+      }
+      const val = hiddenInput.value;
+      hiddenInput.value = '';
+      processHiddenInputValue(val);
     });
     // ※ hiddenInputでstopPropagationは絶対に呼ばない（グローバルキーボード処理を阻害しないため）
   }
@@ -5508,17 +5520,20 @@ function initInputListeners() {
     // 直接のかな入力（かな入力キーボードやIME確定後の文字）
     if (e.key && /^[ぁ-ゖ]$/.test(e.key)) {
       e.preventDefault();
+      gameState.lastRomajiKeyHandledTime = performance.now();
       handleCharInput(e.key);
       return;
     }
     if (e.key && /^[ァ-ヶ]$/.test(e.key)) {
       e.preventDefault();
+      gameState.lastRomajiKeyHandledTime = performance.now();
       const hira = String.fromCharCode(e.key.charCodeAt(0) - 0x60);
       handleCharInput(hira);
       return;
     }
     if (e.key === 'ー') {
       e.preventDefault();
+      gameState.lastRomajiKeyHandledTime = performance.now();
       handleCharInput('ー');
       return;
     }
@@ -5537,6 +5552,7 @@ function initInputListeners() {
 
     if (letter) {
       e.preventDefault();
+      gameState.lastRomajiKeyHandledTime = performance.now();
       processRomajiKey(letter);
       return;
     }
@@ -5575,6 +5591,7 @@ function initInputListeners() {
 }
 
 function processRomajiKey(k) {
+  gameState.lastRomajiKeyHandledTime = performance.now();
   // 'n' がバッファにあり、次に続くキーが母音 (aiueo) や 'y' 以外の子音なら 'ん' を確定
   if (gameState.romajiBuffer === 'n') {
     if (k === 'n' || k === "'") {
@@ -5600,6 +5617,8 @@ function processRomajiKey(k) {
   }
 
   gameState.romajiBuffer += k;
+  // 新しいキー入力があったため直前文字の重複ガードをリセット
+  gameState.lastInputChar = '';
 
   // 'nn' または 'xn' で 'ん'
   if (gameState.romajiBuffer === 'nn' || gameState.romajiBuffer === 'xn') {
@@ -5658,9 +5677,17 @@ function updateTypingPreview() {
   }
 }
 
-function handleCharInput(char) {
+function handleCharInput(char, isDirectStream = false) {
   if (gameState.isProcessingAnswer) return;
   if (!gameState.currentQuestion) return;
+
+  const now = performance.now();
+  // 同一文字の超短時間（90ミリ秒以内）の二重発火を完全に破棄（ブラウザの重複イベント対策）
+  if (!isDirectStream && gameState.lastInputChar === char && (now - gameState.lastInputTime) < 90) {
+    return;
+  }
+  gameState.lastInputChar = char;
+  gameState.lastInputTime = now;
 
   const targetLen = gameState.currentQuestion.kana.length;
   if (gameState.currentAnswer.length < targetLen) {
@@ -5672,6 +5699,8 @@ function handleCharInput(char) {
 
 function handleBackspace() {
   if (gameState.isProcessingAnswer) return;
+  gameState.lastInputChar = '';
+  gameState.lastInputTime = 0;
   if (gameState.romajiBuffer.length > 0) {
     gameState.romajiBuffer = gameState.romajiBuffer.slice(0, -1);
     playSound('click');
@@ -5689,6 +5718,8 @@ function handleClear() {
   if (gameState.isProcessingAnswer) return;
   gameState.currentAnswer = '';
   gameState.romajiBuffer = '';
+  gameState.lastInputChar = '';
+  gameState.lastInputTime = 0;
   playSound('click');
   updateAnswerSlotsDisplay();
 }
@@ -5944,6 +5975,9 @@ function loadQuestion() {
   gameState.isProcessingAnswer = false;
   gameState.currentAnswer = '';
   gameState.romajiBuffer = '';
+  gameState.lastInputChar = '';
+  gameState.lastInputTime = 0;
+  gameState.lastRomajiKeyHandledTime = 0;
   updateTypingPreview();
 
   const q = gameState.questionQueue[gameState.currentStageIndex];
