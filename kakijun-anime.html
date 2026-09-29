@@ -355,6 +355,23 @@
       opacity: 0.6;
     }
 
+    
+    /* ====================================================
+       各画の筆跡着色（CSS最優先 !important で完全色分け保証）
+       ==================================================== */
+    .main-stroke-group > path:nth-of-type(1),
+    #writer-target svg > g > g:nth-child(2) > path:nth-of-type(1) { stroke: var(--c-stroke-1) !important; }
+    .main-stroke-group > path:nth-of-type(2),
+    #writer-target svg > g > g:nth-child(2) > path:nth-of-type(2) { stroke: var(--c-stroke-2) !important; }
+    .main-stroke-group > path:nth-of-type(3),
+    #writer-target svg > g > g:nth-child(2) > path:nth-of-type(3) { stroke: var(--c-stroke-3) !important; }
+    .main-stroke-group > path:nth-of-type(4),
+    #writer-target svg > g > g:nth-child(2) > path:nth-of-type(4) { stroke: var(--c-stroke-4) !important; }
+    .main-stroke-group > path:nth-of-type(5),
+    #writer-target svg > g > g:nth-child(2) > path:nth-of-type(5) { stroke: var(--c-stroke-5) !important; }
+    .main-stroke-group > path:nth-of-type(n+6),
+    #writer-target svg > g > g:nth-child(2) > path:nth-of-type(n+6) { stroke: var(--c-stroke-rest) !important; }
+
     /* HanziWriter コンテナ */
     #writer-target {
       position: absolute;
@@ -1123,6 +1140,7 @@
     let currentCharData = null;
     let isPlaying = false;
     let isPaused = false;
+    let isLoopWaiting = false;
     let currentStrokeIdx = -1;
     let totalStrokes = 0;
     let loopTimeoutId = null;
@@ -1297,11 +1315,15 @@
       const palette = theme === 'chalkboard' ? CHALK_STROKE_COLORS : INK_STROKE_COLORS;
       const restColor = theme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
 
-      // 1. HanziWriter内部レンダラーの_strokeRenderersをフック
-      if (renderer && renderer._mainCharRenderer && renderer._mainCharRenderer._strokeRenderers) {
-        const srs = renderer._mainCharRenderer._strokeRenderers;
+      // 1. HanziWriter内部レンダラーの_mainCharRendererの_strokeRenderersのみをフック
+      if (renderer && renderer._mainCharRenderer) {
+        if (renderer._mainCharRenderer._group) {
+          renderer._mainCharRenderer._group.classList.add('main-stroke-group');
+        }
+        const srs = renderer._mainCharRenderer._strokeRenderers || [];
         srs.forEach((sr, idx) => {
           const col = idx < palette.length ? palette[idx] : restColor;
+          // HanziWriter内部のカラーゲッターを完全オーバーライド
           sr._getColor = () => ({ r: col.r, g: col.g, b: col.b, a: col.a });
           sr._oldProps = undefined; // 次回レンダリングで色変更を必ず適用
           if (sr._animationPath) {
@@ -1311,15 +1333,18 @@
         });
       }
 
-      // 2. SVG DOM内の clip-path パス要素を直接探索して確実に色付け
+      // 2. DOM経由でも .main-stroke-group のみに対して確実に適用
       const targetEl = document.getElementById('writer-target');
       if (targetEl) {
-        const clipPaths = targetEl.querySelectorAll('path[clip-path]');
-        clipPaths.forEach((p, idx) => {
-          const col = idx < palette.length ? palette[idx] : restColor;
-          p.setAttribute('stroke', col.hex);
-          p.style.setProperty('stroke', col.hex, 'important');
-        });
+        const mainGroup = targetEl.querySelector('.main-stroke-group') || targetEl.querySelector('svg > g > g:nth-child(2)');
+        if (mainGroup) {
+          const paths = mainGroup.querySelectorAll('path');
+          paths.forEach((p, idx) => {
+            const col = idx < palette.length ? palette[idx] : restColor;
+            p.setAttribute('stroke', col.hex);
+            p.style.setProperty('stroke', col.hex, 'important');
+          });
+        }
       }
     }
 
@@ -1433,21 +1458,28 @@
     async function playAllStrokes(fromBeginning = false) {
       if (!writerInstance || totalStrokes === 0) return;
 
-      if (loopTimeoutId) {
-        clearTimeout(loopTimeoutId);
-        loopTimeoutId = null;
-      }
+      stopLoop();
 
       // すでに再生中の二重起動をガード（ただし明示的な最初からの指示時はスキップ）
-      if (isPlaying && !isPaused && !fromBeginning) return;
+      if (isPlaying && !isPaused && !fromBeginning && !isLoopWaiting) return;
 
       isPlaying = true;
       isPaused = false;
+      isLoopWaiting = false;
       updatePlayButtonUI(true);
 
       if (fromBeginning || currentStrokeIdx >= totalStrokes - 1) {
         currentStrokeIdx = -1;
         writerInstance.hideCharacter();
+        const renderer = writerInstance._hanziWriterRenderer || writerInstance._renderer;
+        if (renderer && renderer._mainCharRenderer && renderer._mainCharRenderer._strokeRenderers) {
+          renderer._mainCharRenderer._strokeRenderers.forEach(sr => {
+            if (sr._animationPath) {
+              sr._animationPath.style.strokeDashoffset = (sr._pathLength || 2000).toString();
+              sr._animationPath.style.opacity = '0';
+            }
+          });
+        }
       }
 
       applyPerStrokeColors(writerInstance, currentTheme);
@@ -1496,18 +1528,23 @@
 
         if (isLoopEnabled && !isPaused) {
           loopCount++;
+          isLoopWaiting = true;
           document.getElementById('status-text').innerHTML = `🎉 <strong>全 ${totalStrokes} 画完了！</strong> <span style="display:inline-flex; align-items:center; gap:4px; color:var(--accent-gold); animation: loopPulse 1.2s infinite;">🔄 くり返し再生（${loopCount}回目）まもなく最初から再生します...</span>`;
+          updatePlayButtonUI(true); // くり返し待機中も一時停止ボタンのままにする
           
-          // 次回ループのためにフラグを解放
-          isPlaying = false;
           loopTimeoutId = setTimeout(() => {
+            isLoopWaiting = false;
             if (isLoopEnabled && !isPaused) {
               playAllStrokes(true); // 確実に最初から再実行
+            } else {
+              isPlaying = false;
+              updatePlayButtonUI(false);
             }
           }, 1600);
         } else {
           isPlaying = false;
           isPaused = false;
+          isLoopWaiting = false;
           loopCount = 0;
           updatePlayButtonUI(false);
           document.getElementById('status-text').innerHTML = `🎉 <strong>全 ${totalStrokes} 画の書き順が完了しました！</strong>（「もういちど」で再開）`;
@@ -1517,15 +1554,17 @@
 
     function togglePlayPause() {
       if (!writerInstance) return;
-      if (isPlaying) {
+      if (isPlaying || isLoopWaiting) {
         if (isPaused) {
           // 再開
           isPaused = false;
+          isLoopWaiting = false;
           updatePlayButtonUI(true);
           playAllStrokes(false);
         } else {
           // 一時停止
           isPaused = true;
+          isLoopWaiting = false;
           stopLoop();
           updatePlayButtonUI(false);
           document.getElementById('status-text').innerHTML = `⏸ <strong>一時停止中</strong>（第 ${currentStrokeIdx + 1} 画まで表示中）`;
@@ -1637,13 +1676,14 @@
         clearTimeout(loopTimeoutId);
         loopTimeoutId = null;
       }
+      isLoopWaiting = false;
     }
 
     function toggleLoop(val) {
       isLoopEnabled = val;
       if (isLoopEnabled) {
         loopCount = 0;
-        if (!isPlaying) {
+        if (!isPlaying && !isLoopWaiting) {
           playAllStrokes(true);
         }
       } else {
@@ -1792,9 +1832,9 @@
       
       // 読み上げテキストのカッコや不要記号を完全除去
       function cleanReading(str) {
-        if (!str || str === '—') return '';
+        if (!str || str === '—' || str === '-') return '';
         return str
-          .replace(/[（()）]/g, '、')
+          .replace(/[（()）]/g, '')
           .replace(/[—－-]/g, '')
           .replace(/、+/g, '、')
           .replace(/^、|、$/g, '')
@@ -1810,7 +1850,7 @@
       
       // 熟語の読み間違えを防ぐため、ふりがな(primaryKana)を優先して発話
       const wordKana = data.primaryKana || cleanReading(data.primaryCompound);
-      const wordText = wordKana ? `ことばのれい、${data.primaryCompound}、${wordKana}。` : '';
+      const wordText = wordKana ? `ことばのれい、${wordKana}。` : '';
       const sentenceText = data.displaySentence ? `れいぶん、${data.displaySentence}` : (data.primarySentence ? `れいぶん、${data.primarySentence}` : '');
 
       const textToSpeak = `漢字の、「${currentChar}」。${onText}${kunText}${wordText}${sentenceText}`;
