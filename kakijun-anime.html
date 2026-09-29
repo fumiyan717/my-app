@@ -229,12 +229,14 @@
       margin-bottom: 12px;
       padding-bottom: 10px;
       border-bottom: 1.5px dashed var(--border-panel);
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     .char-banner-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .grade-tag {
@@ -261,6 +263,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-wrap: wrap;
     }
 
     .tool-icon-btn {
@@ -288,6 +291,19 @@
       border-color: var(--accent-gold);
     }
 
+    .tool-icon-btn.speaking {
+      background: #ef4444;
+      border-color: #f87171;
+      color: #ffffff;
+      animation: speakPulse 1.2s infinite;
+    }
+
+    @keyframes speakPulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(0.97); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
     /* 360x360 描画ステージ */
     .writer-stage {
       position: relative;
@@ -300,10 +316,16 @@
       margin: 4px 0 14px 0;
       overflow: hidden;
       touch-action: none;
+      transition: width 0.2s, height 0.2s;
+    }
+
+    .writer-stage.jumbo {
+      width: 420px;
+      height: 420px;
     }
 
     @media (max-width: 440px) {
-      .writer-stage {
+      .writer-stage, .writer-stage.jumbo {
         width: 300px;
         height: 300px;
       }
@@ -366,7 +388,7 @@
       border-radius: 50%;
       background: #ffffff;
       color: #0f172a;
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 900;
       display: flex;
       align-items: center;
@@ -374,7 +396,14 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
       border: 2px solid #000;
       transform: translate(-50%, -50%);
-      transition: transform 0.2s, background 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .number-badge.active-drawing {
+      transform: translate(-50%, -50%) scale(1.35);
+      box-shadow: 0 0 12px currentColor;
+      background: #fffbdf;
+      z-index: 10;
     }
 
     /* ====================================================
@@ -451,10 +480,16 @@
       font-size: 13.5px;
       font-weight: 900;
       margin-bottom: 14px;
-      min-height: 40px;
+      min-height: 42px;
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+
+    @keyframes loopPulse {
+      0% { opacity: 0.65; transform: scale(0.98); }
+      50% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0.65; transform: scale(0.98); }
     }
 
     /* コントロールボタン群 */
@@ -563,6 +598,7 @@
       font-weight: 700;
       color: var(--text-main);
       cursor: pointer;
+      user-select: none;
     }
 
     .loop-toggle-wrap input {
@@ -861,7 +897,12 @@
     <div class="header-actions">
       <!-- 黒板 / ホワイトボード切替 -->
       <button class="btn-header" onclick="toggleTheme()" id="btn-theme" title="黒板モードと教室ホワイトボードモードを切り替えます">
-        🎨 黒板モード ⇄ 白板モード
+        🎨 黒板 ⇄ 白板モード
+      </button>
+
+      <!-- 拡大 / 標準切替 -->
+      <button class="btn-header" onclick="toggleStageZoom()" id="btn-zoom" title="文字ステージの大きさを拡大・標準で切り替えます">
+        🔍 拡大
       </button>
 
       <!-- 全画面プロジェクターモード -->
@@ -897,7 +938,7 @@
           <!-- マス目・お手本・筆順番号ツール -->
           <div class="stage-tools">
             <button class="tool-icon-btn active" id="btn-grid" onclick="cycleGrid()" title="マス目（田の字・米の字・なし）を切り替えます">
-              🔲 マス目: 田の字
+              🔲 田の字
             </button>
             <button class="tool-icon-btn active" id="btn-outline" onclick="toggleOutline()" title="薄いお手本線の表示切替">
               💡 お手本線: ON
@@ -1047,7 +1088,7 @@
         <!-- リスト下部ステータス -->
         <div class="list-footer">
           <span id="kanji-count-status">表示中: 1年生 (80字中 80字)</span>
-          <span>⌨️ [Space]:再生/停止 [←/→]:1画送り [R]:最初から</span>
+          <span>⌨️ [Space]:再生/停止 [←/→]:1画送り [R]:最初から [L]:ループ</span>
         </div>
       </div>
     </section>
@@ -1074,6 +1115,9 @@
     let currentGridMode = 'cross'; // 'cross' (田) | 'diag' (米) | 'none' (なし)
     let currentTheme = 'chalkboard'; // 'chalkboard' | 'whiteboard'
     let isLoopEnabled = false;
+    let isStageZoomed = false;
+    let loopCount = 0;
+    let isSpeaking = false;
 
     let writerInstance = null;
     let currentCharData = null;
@@ -1146,7 +1190,18 @@
       isPlaying = false;
       isPaused = false;
       currentStrokeIdx = -1;
+      loopCount = 0;
       updatePlayButtonUI(false);
+
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        isSpeaking = false;
+        const btn = document.getElementById('btn-speak');
+        if (btn) {
+          btn.innerHTML = '🔊 よみあげ';
+          btn.classList.remove('speaking');
+        }
+      }
 
       // URLパラメータの同期
       const url = new URL(window.location);
@@ -1177,7 +1232,7 @@
           showOutline: showOutline,
           strokeAnimationSpeed: currentSpeed,
           delayBetweenStrokes: Math.max(120, Math.round(260 / currentSpeed)),
-          strokeColor: '#059669', // デフォルトフォールバック
+          strokeColor: currentTheme === 'chalkboard' ? CHALK_STROKE_COLORS[0].hex : INK_STROKE_COLORS[0].hex,
           outlineColor: currentTheme === 'chalkboard' ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.15)',
           showCharacter: false,
           charDataLoader: function(c, onComplete, onErr) {
@@ -1185,7 +1240,6 @@
               onComplete(charDataCache[c]);
               return;
             }
-            // 1. 日本語標準教科書体データ (hanzi-writer-data-jp: AnimCJK/MakeMeAHanzi準拠)
             const urlJp = `https://cdn.jsdelivr.net/npm/hanzi-writer-data-jp@latest/${encodeURIComponent(c)}.json`;
             fetch(urlJp)
               .then(res => {
@@ -1198,7 +1252,6 @@
               })
               .catch(err => {
                 console.warn('JP data fallback:', err);
-                // 2. フォールバック
                 const urlFallback = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@latest/${encodeURIComponent(c)}.json`;
                 fetch(urlFallback)
                   .then(r => r.json())
@@ -1221,8 +1274,8 @@
 
             document.getElementById('status-text').innerHTML = `「<strong>${currentChar}</strong>」の準備が完了しました！自動で書き順が始まります。`;
             
-            // 漢字切り替え時は自動でアニメーション再生
-            playAllStrokes();
+            // 漢字読み込み直後に自動再生
+            playAllStrokes(true);
           },
           onLoadCharDataError: function(err) {
             console.error('Error loading kanji data:', err);
@@ -1236,22 +1289,38 @@
 
     // ==========================================
     // 🎨 1〜5画目個別色 & 6画目以降統一色 適用ロジック
+    // （筆跡にも確実に反映させる内部レンダラー＆DOM直接バインド）
     // ==========================================
     function applyPerStrokeColors(writer, theme) {
-      if (!writer || !writer._renderer || !writer._renderer._mainCharRenderer) return;
-      const srs = writer._renderer._mainCharRenderer._strokeRenderers || [];
+      if (!writer) return;
+      const renderer = writer._hanziWriterRenderer || writer._renderer;
       const palette = theme === 'chalkboard' ? CHALK_STROKE_COLORS : INK_STROKE_COLORS;
       const restColor = theme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
 
-      srs.forEach((sr, idx) => {
-        const col = idx < palette.length ? palette[idx] : restColor;
-        // HanziWriter内部レンダラーの_getColor関数を動的オーバーライド
-        sr._getColor = () => ({ r: col.r, g: col.g, b: col.b, a: col.a });
-        if (sr._animationPath) {
-          sr._animationPath.setAttribute('stroke', `rgba(${col.r}, ${col.g}, ${col.b}, ${col.a})`);
-          sr._animationPath.style.stroke = `rgba(${col.r}, ${col.g}, ${col.b}, ${col.a})`;
-        }
-      });
+      // 1. HanziWriter内部レンダラーの_strokeRenderersをフック
+      if (renderer && renderer._mainCharRenderer && renderer._mainCharRenderer._strokeRenderers) {
+        const srs = renderer._mainCharRenderer._strokeRenderers;
+        srs.forEach((sr, idx) => {
+          const col = idx < palette.length ? palette[idx] : restColor;
+          sr._getColor = () => ({ r: col.r, g: col.g, b: col.b, a: col.a });
+          sr._oldProps = undefined; // 次回レンダリングで色変更を必ず適用
+          if (sr._animationPath) {
+            sr._animationPath.setAttribute('stroke', col.hex);
+            sr._animationPath.style.setProperty('stroke', col.hex, 'important');
+          }
+        });
+      }
+
+      // 2. SVG DOM内の clip-path パス要素を直接探索して確実に色付け
+      const targetEl = document.getElementById('writer-target');
+      if (targetEl) {
+        const clipPaths = targetEl.querySelectorAll('path[clip-path]');
+        clipPaths.forEach((p, idx) => {
+          const col = idx < palette.length ? palette[idx] : restColor;
+          p.setAttribute('stroke', col.hex);
+          p.style.setProperty('stroke', col.hex, 'important');
+        });
+      }
     }
 
     // 筆画カラー凡例バーの更新
@@ -1271,7 +1340,7 @@
         chip.onclick = () => jumpToStroke(i);
         chip.innerHTML = `
           <span class="legend-color-dot" style="background: ${palette[i].hex};"></span>
-          <span>${i + 1}画目</span>
+          <span>${i + 1}画目 (${palette[i].name})</span>
         `;
         container.appendChild(chip);
       }
@@ -1280,11 +1349,11 @@
         const restChip = document.createElement('div');
         restChip.className = 'legend-chip';
         restChip.id = 'legend-chip-rest';
-        restChip.title = `第6画目以降（統一色）`;
+        restChip.title = `第6画目以降（統一色: ${restColor.name}）`;
         restChip.onclick = () => jumpToStroke(5);
         restChip.innerHTML = `
           <span class="legend-color-dot" style="background: ${restColor.hex}; border: 1px solid #888;"></span>
-          <span>6画〜(${count}画)</span>
+          <span>6〜${count}画 (${restColor.name})</span>
         `;
         container.appendChild(restChip);
       }
@@ -1309,6 +1378,14 @@
         if (restChip) restChip.classList.add('active-drawing');
         const restColor = currentTheme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
         indicator.innerHTML = `✍️ <strong>第 ${strokeIdx + 1} 画目</strong>（統一色: ${restColor.name}）を描画中`;
+      }
+    }
+
+    function highlightNumberBadge(strokeIdx) {
+      document.querySelectorAll('.number-badge').forEach(b => b.classList.remove('active-drawing'));
+      if (strokeIdx >= 0) {
+        const badge = document.querySelector(`.number-badge[data-stroke-idx="${strokeIdx}"]`);
+        if (badge) badge.classList.add('active-drawing');
       }
     }
 
@@ -1340,6 +1417,7 @@
         badge.textContent = idx + 1;
         badge.style.left = `${sx}px`;
         badge.style.top = `${sy}px`;
+        badge.dataset.strokeIdx = idx;
 
         const col = idx < palette.length ? palette[idx] : restColor;
         badge.style.borderColor = col.hex;
@@ -1350,17 +1428,24 @@
     }
 
     // ==========================================
-    // 🎛️ 再生コントロール（順次描画 & ループ）
+    // 🎛️ 再生コントロール（筆跡着色 & 確実なループ再生）
     // ==========================================
-    async function playAllStrokes() {
-      if (!writerInstance) return;
-      if (isPlaying && !isPaused) return;
+    async function playAllStrokes(fromBeginning = false) {
+      if (!writerInstance || totalStrokes === 0) return;
+
+      if (loopTimeoutId) {
+        clearTimeout(loopTimeoutId);
+        loopTimeoutId = null;
+      }
+
+      // すでに再生中の二重起動をガード（ただし明示的な最初からの指示時はスキップ）
+      if (isPlaying && !isPaused && !fromBeginning) return;
 
       isPlaying = true;
       isPaused = false;
       updatePlayButtonUI(true);
 
-      if (currentStrokeIdx >= totalStrokes - 1) {
+      if (fromBeginning || currentStrokeIdx >= totalStrokes - 1) {
         currentStrokeIdx = -1;
         writerInstance.hideCharacter();
       }
@@ -1370,37 +1455,62 @@
       while (isPlaying && !isPaused && currentStrokeIdx < totalStrokes - 1) {
         currentStrokeIdx++;
         highlightLegendChip(currentStrokeIdx);
+        highlightNumberBadge(currentStrokeIdx);
         updateProgressStatus(currentStrokeIdx);
 
+        // その画の専用色を取得
+        const palette = currentTheme === 'chalkboard' ? CHALK_STROKE_COLORS : INK_STROKE_COLORS;
+        const restCol = currentTheme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
+        const strokeColor = currentStrokeIdx < palette.length ? palette[currentStrokeIdx] : restCol;
+
+        // 1. HanziWriter本体の描画色を動的設定
+        try {
+          await writerInstance.updateColor('strokeColor', strokeColor.hex, { duration: 0 });
+        } catch (e) {}
+
+        // 2. DOMとレンダラーを色固定
+        applyPerStrokeColors(writerInstance, currentTheme);
+
+        // 3. 1画アニメーション実行
         try {
           await writerInstance.animateStroke(currentStrokeIdx);
         } catch (e) {
+          console.warn('Animation interrupted:', e);
           break;
         }
 
+        // 4. 描画完了後も色を即座に再固定
+        applyPerStrokeColors(writerInstance, currentTheme);
+
         if (!isPlaying || isPaused) break;
 
-        const delay = Math.max(120, Math.round(260 / currentSpeed));
+        const delay = Math.max(100, Math.round(240 / currentSpeed));
         await new Promise(r => setTimeout(r, delay));
       }
 
+      // 全画の描画完了時
       if (currentStrokeIdx >= totalStrokes - 1) {
         highlightLegendChip(-1);
-        document.getElementById('status-text').innerHTML = `🎉 <strong>全 ${totalStrokes} 画の書き順が完了しました！</strong>`;
-        
-        if (isLoopEnabled && isPlaying && !isPaused) {
-          clearTimeout(loopTimeoutId);
+        highlightNumberBadge(-1);
+        applyPerStrokeColors(writerInstance, currentTheme);
+
+        if (isLoopEnabled && !isPaused) {
+          loopCount++;
+          document.getElementById('status-text').innerHTML = `🎉 <strong>全 ${totalStrokes} 画完了！</strong> <span style="display:inline-flex; align-items:center; gap:4px; color:var(--accent-gold); animation: loopPulse 1.2s infinite;">🔄 くり返し再生（${loopCount}回目）まもなく最初から再生します...</span>`;
+          
+          // 次回ループのためにフラグを解放
+          isPlaying = false;
           loopTimeoutId = setTimeout(() => {
-            if (isLoopEnabled && isPlaying && !isPaused) {
-              currentStrokeIdx = -1;
-              writerInstance.hideCharacter();
-              playAllStrokes();
+            if (isLoopEnabled && !isPaused) {
+              playAllStrokes(true); // 確実に最初から再実行
             }
-          }, 1500); // 1.5秒待機後に次ループ
+          }, 1600);
         } else {
           isPlaying = false;
           isPaused = false;
+          loopCount = 0;
           updatePlayButtonUI(false);
+          document.getElementById('status-text').innerHTML = `🎉 <strong>全 ${totalStrokes} 画の書き順が完了しました！</strong>（「もういちど」で再開）`;
         }
       }
     }
@@ -1412,16 +1522,18 @@
           // 再開
           isPaused = false;
           updatePlayButtonUI(true);
-          playAllStrokes();
+          playAllStrokes(false);
         } else {
           // 一時停止
           isPaused = true;
           stopLoop();
           updatePlayButtonUI(false);
-          document.getElementById('status-text').innerHTML = `⏸ <strong>一時停止中</strong>（第 ${currentStrokeIdx + 1} 画まで表示）`;
+          document.getElementById('status-text').innerHTML = `⏸ <strong>一時停止中</strong>（第 ${currentStrokeIdx + 1} 画まで表示中）`;
         }
       } else {
-        playAllStrokes();
+        // すでに最後まで描画済みなら最初から再生
+        const fromBeginning = (currentStrokeIdx >= totalStrokes - 1);
+        playAllStrokes(fromBeginning);
       }
     }
 
@@ -1430,9 +1542,7 @@
       stopLoop();
       isPlaying = false;
       isPaused = false;
-      currentStrokeIdx = -1;
-      writerInstance.hideCharacter();
-      playAllStrokes();
+      playAllStrokes(true);
     }
 
     function stepPrevStroke() {
@@ -1450,6 +1560,7 @@
 
       showStrokesUpTo(currentStrokeIdx);
       highlightLegendChip(currentStrokeIdx);
+      highlightNumberBadge(currentStrokeIdx);
       updateProgressStatus(currentStrokeIdx);
     }
 
@@ -1463,9 +1574,20 @@
       if (currentStrokeIdx < totalStrokes - 1) {
         currentStrokeIdx++;
         highlightLegendChip(currentStrokeIdx);
+        highlightNumberBadge(currentStrokeIdx);
         updateProgressStatus(currentStrokeIdx);
+
+        const palette = currentTheme === 'chalkboard' ? CHALK_STROKE_COLORS : INK_STROKE_COLORS;
+        const restCol = currentTheme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
+        const col = currentStrokeIdx < palette.length ? palette[currentStrokeIdx] : restCol;
+
+        try {
+          await writerInstance.updateColor('strokeColor', col.hex, { duration: 0 });
+        } catch (e) {}
+
         applyPerStrokeColors(writerInstance, currentTheme);
         await writerInstance.animateStroke(currentStrokeIdx);
+        applyPerStrokeColors(writerInstance, currentTheme);
       }
     }
 
@@ -1479,13 +1601,17 @@
       currentStrokeIdx = Math.min(targetIdx, totalStrokes - 1);
       showStrokesUpTo(currentStrokeIdx);
       highlightLegendChip(currentStrokeIdx);
+      highlightNumberBadge(currentStrokeIdx);
       updateProgressStatus(currentStrokeIdx);
     }
 
     function showStrokesUpTo(targetIdx) {
-      if (!writerInstance || !writerInstance._renderer || !writerInstance._renderer._mainCharRenderer) return;
-      const srs = writerInstance._renderer._mainCharRenderer._strokeRenderers || [];
-      const group = writerInstance._renderer._mainCharRenderer._group;
+      if (!writerInstance) return;
+      const renderer = writerInstance._hanziWriterRenderer || writerInstance._renderer;
+      if (!renderer || !renderer._mainCharRenderer) return;
+
+      const srs = renderer._mainCharRenderer._strokeRenderers || [];
+      const group = renderer._mainCharRenderer._group;
       if (group) {
         group.style.opacity = '1';
         group.style.display = 'block';
@@ -1503,6 +1629,7 @@
           }
         }
       });
+      applyPerStrokeColors(writerInstance, currentTheme);
     }
 
     function stopLoop() {
@@ -1514,8 +1641,13 @@
 
     function toggleLoop(val) {
       isLoopEnabled = val;
-      if (isLoopEnabled && !isPlaying) {
-        playAllStrokes();
+      if (isLoopEnabled) {
+        loopCount = 0;
+        if (!isPlaying) {
+          playAllStrokes(true);
+        }
+      } else {
+        stopLoop();
       }
     }
 
@@ -1542,7 +1674,7 @@
     }
 
     // ==========================================
-    // ⚙️ 設定切り替え（速度・マス目・ガイド・番号・テーマ）
+    // ⚙️ 設定切り替え（速度・マス目・ガイド・番号・テーマ・ズーム）
     // ==========================================
     function setSpeed(spd) {
       currentSpeed = spd;
@@ -1566,20 +1698,20 @@
 
       if (currentGridMode === 'cross') {
         currentGridMode = 'diag';
-        btn.innerHTML = '🔲 マス目: 米の字';
+        btn.innerHTML = '🔲 米の字';
         diag1.style.display = 'block';
         diag2.style.display = 'block';
         crosses.forEach(c => c.style.display = 'block');
       } else if (currentGridMode === 'diag') {
         currentGridMode = 'none';
-        btn.innerHTML = '🔲 マス目: なし';
+        btn.innerHTML = '🔲 なし';
         btn.classList.remove('active');
         diag1.style.display = 'none';
         diag2.style.display = 'none';
         crosses.forEach(c => c.style.display = 'none');
       } else {
         currentGridMode = 'cross';
-        btn.innerHTML = '🔲 マス目: 田の字';
+        btn.innerHTML = '🔲 田の字';
         btn.classList.add('active');
         diag1.style.display = 'none';
         diag2.style.display = 'none';
@@ -1610,13 +1742,21 @@
       currentTheme = currentTheme === 'chalkboard' ? 'whiteboard' : 'chalkboard';
       document.documentElement.setAttribute('data-theme', currentTheme);
       const btn = document.getElementById('btn-theme');
-      btn.innerHTML = currentTheme === 'chalkboard' ? '🎨 黒板モード ⇄ 白板モード' : '🎨 白板モード ⇄ 黒板モード';
+      btn.innerHTML = currentTheme === 'chalkboard' ? '🎨 黒板 ⇄ 白板モード' : '🎨 白板 ⇄ 黒板モード';
 
       if (writerInstance) {
         applyPerStrokeColors(writerInstance, currentTheme);
         updateLegendChipsUI(totalStrokes);
         if (currentCharData) updateNumbersOverlay(currentCharData);
       }
+    }
+
+    function toggleStageZoom() {
+      isStageZoomed = !isStageZoomed;
+      const stage = document.getElementById('writer-stage');
+      const btn = document.getElementById('btn-zoom');
+      stage.classList.toggle('jumbo', isStageZoomed);
+      btn.innerHTML = isStageZoomed ? '🔍 標準サイズ' : '🔍 拡大';
     }
 
     function toggleFullscreen() {
@@ -1627,23 +1767,76 @@
       }
     }
 
-    // 音声読み上げ（Web Speech API）
+    // ==========================================
+    // 🔊 音声読み上げ（誤読完全防止・ひらがな明示化・停止連動）
+    // ==========================================
     function speakKanji() {
       if (!('speechSynthesis' in window)) {
         alert('お使いの端末・ブラウザは音声読み上げに対応していません。');
         return;
       }
+
+      const btn = document.getElementById('btn-speak');
+
+      // 再生中の場合はクリックで即座に停止
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        isSpeaking = false;
+        btn.innerHTML = '🔊 よみあげ';
+        btn.classList.remove('speaking');
+        return;
+      }
+
       window.speechSynthesis.cancel();
       const data = (window.KANJI_DATA && window.KANJI_DATA[currentChar]) || {};
-      const onText = data.on && data.on !== '—' ? `音読み、${data.on}。` : '';
-      const kunText = data.kun && data.kun !== '—' ? `訓読み、${data.kun}。` : '';
-      const compText = data.primaryCompound ? `代表的な言葉、${data.primaryCompound}。` : '';
-      const sentenceText = data.primarySentence ? `例文、${data.primarySentence}` : '';
+      
+      // 読み上げテキストのカッコや不要記号を完全除去
+      function cleanReading(str) {
+        if (!str || str === '—') return '';
+        return str
+          .replace(/[（()）]/g, '、')
+          .replace(/[—－-]/g, '')
+          .replace(/、+/g, '、')
+          .replace(/^、|、$/g, '')
+          .trim();
+      }
 
-      const text = `${currentChar}。${onText}${kunText}${compText}${sentenceText}`;
-      const utter = new SpeechSynthesisUtterance(text);
+      const onClean = cleanReading(data.on);
+      const kunClean = cleanReading(data.kun);
+      
+      // 「訓読みみ」誤読を防ぐため「くんよみは、」「おんよみは、」とひらがなで明示指定
+      const onText = onClean ? `おんよみは、${onClean}。` : '';
+      const kunText = kunClean ? `くんよみは、${kunClean}。` : '';
+      
+      // 熟語の読み間違えを防ぐため、ふりがな(primaryKana)を優先して発話
+      const wordKana = data.primaryKana || cleanReading(data.primaryCompound);
+      const wordText = wordKana ? `ことばのれい、${data.primaryCompound}、${wordKana}。` : '';
+      const sentenceText = data.displaySentence ? `れいぶん、${data.displaySentence}` : (data.primarySentence ? `れいぶん、${data.primarySentence}` : '');
+
+      const textToSpeak = `漢字の、「${currentChar}」。${onText}${kunText}${wordText}${sentenceText}`;
+
+      const utter = new SpeechSynthesisUtterance(textToSpeak);
       utter.lang = 'ja-JP';
-      utter.rate = 0.92;
+      utter.rate = 0.90; // 児童が聞き取りやすい落ち着いた速度
+
+      utter.onstart = () => {
+        isSpeaking = true;
+        btn.innerHTML = '⏹️ 停止';
+        btn.classList.add('speaking');
+      };
+
+      utter.onend = () => {
+        isSpeaking = false;
+        btn.innerHTML = '🔊 よみあげ';
+        btn.classList.remove('speaking');
+      };
+
+      utter.onerror = () => {
+        isSpeaking = false;
+        btn.innerHTML = '🔊 よみあげ';
+        btn.classList.remove('speaking');
+      };
+
       window.speechSynthesis.speak(utter);
     }
 
@@ -1679,7 +1872,14 @@
         tile.className = 'kanji-tile';
         tile.textContent = ch;
         tile.id = `tile-${ch}`;
-        tile.onclick = () => loadCurrentKanji(ch);
+        tile.title = `${ch}（クリックで書き順を表示）`;
+        tile.onclick = () => {
+          loadCurrentKanji(ch);
+          // スマホ・縦画面時はアニメーションステージが見えるよう上部へスクロール
+          if (window.innerWidth <= 960) {
+            document.getElementById('writer-stage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        };
         if (ch === currentChar) tile.classList.add('selected');
         grid.appendChild(tile);
       });
@@ -1768,6 +1968,9 @@
           const chk = document.getElementById('chk-loop');
           chk.checked = !chk.checked;
           toggleLoop(chk.checked);
+        } else if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          speakKanji();
         } else if (e.key === 'f' || e.key === 'F') {
           e.preventDefault();
           toggleFullscreen();
