@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="chalkboard">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>🏫 漢字かきじゅんナビ 〜小学校全1026字 書き順アニメーション〜</title>
+  <meta name="description" content="文部科学省学習指導要領配当・教科書体準拠。小学校全1026字の書き順アニメーションを1〜5画色分け・6画目以降統一表示で視覚的にわかりやすく学べる教員・児童向け専用ビューア。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDPMincho:wght@400;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  
+  <!-- HanziWriter & 漢字マスターデータ -->
+  <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+  <script src="kanji-data.js"></script>
+
+  <style>
+    /* ====================================================
+       テーマ変数定義（黒板モード & ホワイトボードモード）
+       ==================================================== */
+    :root[data-theme="chalkboard"] {
+      --bg-main: #0b1f17;
+      --bg-panel: rgba(18, 48, 36, 0.95);
+      --bg-stage: #14382a;
+      --border-panel: #295744;
+      --text-main: #f1f5f9;
+      --text-sub: #a7c9b8;
+      --text-muted: #6b9c84;
+      --accent-gold: #fde047;
+      --accent-chalk: #f8fafc;
+      --card-bg: rgba(12, 34, 25, 0.85);
+      --card-hover: rgba(26, 68, 51, 0.95);
+      --card-active: #059669;
+      --grid-line: rgba(255, 255, 255, 0.22);
+      --shadow-board: 0 12px 36px rgba(0, 0, 0, 0.5);
+
+      /* 筆画カラーパレット（黒板チョーク調） */
+      --c-stroke-1: #ff3b5c; /* 1画目: 鮮烈チョーク赤 */
+      --c-stroke-2: #38bdf8; /* 2画目: 鮮やか水色 */
+      --c-stroke-3: #4ade80; /* 3画目: 明るい黄緑 */
+      --c-stroke-4: #fbbf24; /* 4画目: 暖かい黄橙 */
+      --c-stroke-5: #c084fc; /* 5画目: やさしい藤紫 */
+      --c-stroke-rest: #f8fafc; /* 6画目以降: 統一ホワイトチョーク */
+      
+      --attr-bg: rgba(7, 20, 15, 0.9);
+      --attr-border: rgba(255, 255, 255, 0.15);
+      --attr-text: #94a3b8;
+    }
+
+    :root[data-theme="whiteboard"] {
+      --bg-main: #f1f5f9;
+      --bg-panel: #ffffff;
+      --bg-stage: #ffffff;
+      --border-panel: #cbd5e1;
+      --text-main: #0f172a;
+      --text-sub: #475569;
+      --text-muted: #64748b;
+      --accent-gold: #b45309;
+      --accent-chalk: #0284c7;
+      --card-bg: #f8fafc;
+      --card-hover: #e2e8f0;
+      --card-active: #0284c7;
+      --grid-line: rgba(203, 213, 225, 0.85);
+      --shadow-board: 0 8px 24px rgba(15, 23, 42, 0.08);
+
+      /* 筆画カラーパレット（ノート・教科書調） */
+      --c-stroke-1: #e60033; /* 1画目: 鮮やか赤 */
+      --c-stroke-2: #0066cc; /* 2画目: 鮮やか青 */
+      --c-stroke-3: #008f39; /* 3画目: 鮮やか緑 */
+      --c-stroke-4: #f57c00; /* 4画目: 鮮やか橙 */
+      --c-stroke-5: #8e24aa; /* 5画目: 鮮やか紫 */
+      --c-stroke-rest: #334155; /* 6画目以降: 統一ダークスレート濃紺 */
+
+      --attr-bg: rgba(255, 255, 255, 0.92);
+      --attr-border: rgba(0, 0, 0, 0.12);
+      --attr-text: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Zen Maru Gothic', 'BIZ UDPGothic', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      transition: background-color 0.25s, color 0.25s;
+      overflow-x: hidden;
+    }
+
+    /* ====================================================
+       ヘッダーナビゲーション
+       ==================================================== */
+    .app-header {
+      background: var(--bg-panel);
+      border-bottom: 2px solid var(--border-panel);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      color: var(--text-main);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(253, 224, 71, 0.18);
+      border: 1px solid var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-header {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid var(--border-panel);
+      color: var(--text-main);
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-header:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-gold);
+      transform: translateY(-1px);
+    }
+
+    .btn-header.primary {
+      background: #059669;
+      border-color: #10b981;
+      color: #ffffff;
+    }
+
+    /* ====================================================
+       メイン2カラムレイアウト（左50% / 右50%）
+       ==================================================== */
+    .main-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(420px, 1fr) 1fr;
+      gap: 16px;
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px 20px 60px 20px;
+    }
+
+    @media (max-width: 960px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+        padding-bottom: 70px;
+      }
+    }
+
+    /* ====================================================
+       左側カラム: 書き順アニメーション表示
+       ==================================================== */
+    .left-column {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .board-card {
+      background: var(--bg-panel);
+      border: 3px solid var(--border-panel);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: var(--shadow-board);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* 漢字見出しバー */
+    .char-banner {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1.5px dashed var(--border-panel);
+    }
+
+    .char-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .grade-tag {
+      font-size: 13px;
+      font-weight: 900;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: rgba(5, 150, 105, 0.2);
+      border: 1.5px solid #10b981;
+      color: #10b981;
+    }
+
+    .stroke-count-tag {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--accent-gold);
+      background: rgba(253, 224, 71, 0.12);
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(253, 224, 71, 0.4);
+    }
+
+    .stage-tools {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tool-icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-panel);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+
+    .tool-icon-btn:hover {
+      background: var(--card-hover);
+    }
+
+    .tool-icon-btn.active {
+      background: var(--accent-gold);
+      color: #0b1f17;
+      border-color: var(--accent-gold);
+    }
+
+    /* 360x360 描画ステージ */
+    .writer-stage {
+      position: relative;
+      width: 360px;
+      height: 360px;
+      background: var(--bg-stage);
+      border: 3px solid var(--border-panel);
+      border-radius: 16px;
+      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.25);
+      margin: 4px 0 14px 0;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    @media (max-width: 440px) {
+      .writer-stage {
+        width: 300px;
+        height: 300px;
+      }
+    }
+
+    /* グリッドガイド線（田・米） */
+    .grid-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .grid-line-cross {
+      stroke: var(--grid-line);
+      stroke-width: 1.5;
+      stroke-dasharray: 6 6;
+    }
+
+    .grid-line-diag {
+      stroke: var(--grid-line);
+      stroke-width: 1;
+      stroke-dasharray: 4 6;
+      opacity: 0.6;
+    }
+
+    /* HanziWriter コンテナ */
+    #writer-target {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+
+    #writer-target svg {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* 筆順番号オーバーレイ */
+    #numbers-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .number-badge {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 11.5px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      border: 2px solid #000;
+      transform: translate(-50%, -50%);
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    /* ====================================================
+       筆画カラー凡例バー（1〜5画色分け・6画目以降統一）
+       ==================================================== */
+    .color-legend-wrap {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border-panel);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+
+    .legend-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-sub);
+    }
+
+    .color-legend-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .legend-chip {
+      flex: 1;
+      min-width: 52px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1.5px solid var(--border-panel);
+      border-radius: 8px;
+      padding: 5px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 900;
+      color: var(--text-main);
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .legend-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .legend-chip.active-drawing {
+      border-color: #ffffff;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+      transform: translateY(-2px) scale(1.05);
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    /* 進捗・実況ステータステキスト */
+    .status-alert {
+      width: 100%;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(5, 150, 105, 0.15);
+      border: 1.5px solid #10b981;
+      color: var(--accent-gold);
+      font-size: 13.5px;
+      font-weight: 900;
+      margin-bottom: 14px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* コントロールボタン群 */
+    .control-row {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ctrl-btn {
+      flex: 1;
+      min-width: 72px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid var(--border-panel);
+      color: var(--text-main);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 900;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .ctrl-btn:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-gold);
+      transform: translateY(-1px);
+    }
+
+    .ctrl-btn:active {
+      transform: translateY(1px);
+    }
+
+    .ctrl-btn.primary {
+      flex: 1.4;
+      background: #059669;
+      border-color: #10b981;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+    }
+
+    .ctrl-btn.primary:hover {
+      background: #047857;
+    }
+
+    .ctrl-btn.active {
+      background: var(--accent-gold);
+      color: #0b1f17;
+      border-color: var(--accent-gold);
+    }
+
+    /* 速度切替 & オプションスイッチ行 */
+    .option-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: rgba(0, 0, 0, 0.12);
+      border: 1px solid var(--border-panel);
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+
+    .speed-pills {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .speed-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-sub);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .speed-btn:hover {
+      color: var(--text-main);
+    }
+
+    .speed-btn.active {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    .loop-toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .loop-toggle-wrap input {
+      width: 16px;
+      height: 16px;
+      accent-color: #059669;
+      cursor: pointer;
+    }
+
+    /* 漢字情報カード（音訓・用例・例文） */
+    .info-card {
+      width: 100%;
+      background: var(--card-bg);
+      border: 2px solid var(--border-panel);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 13.5px;
+    }
+
+    .readings-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .compounds-list {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .compound-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-panel);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .sentence-box {
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text-sub);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    /* ====================================================
+       右側カラム: その学年で学習する漢字一覧
+       ==================================================== */
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: calc(100vh - 100px);
+      position: sticky;
+      top: 76px;
+    }
+
+    @media (max-width: 960px) {
+      .right-column {
+        height: auto;
+        position: static;
+      }
+    }
+
+    .kanji-list-card {
+      background: var(--bg-panel);
+      border: 3px solid var(--border-panel);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: var(--shadow-board);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* 学年切り替えタブ */
+    .grade-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+
+    .grade-tab {
+      flex: 1;
+      min-width: 68px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1.5px solid var(--border-panel);
+      color: var(--text-sub);
+      border-radius: 10px;
+      padding: 8px 4px;
+      font-size: 12px;
+      font-weight: 900;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .grade-tab:hover {
+      background: var(--card-hover);
+      color: var(--text-main);
+    }
+
+    .grade-tab.active {
+      background: #059669;
+      border-color: #10b981;
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+    }
+
+    /* 検索フィルターバー */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .search-input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1.5px solid var(--border-panel);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-gold);
+    }
+
+    .btn-random {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid var(--border-panel);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-random:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-gold);
+    }
+
+    /* 漢字タイルグリッド */
+    .kanji-grid-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+      gap: 8px;
+      align-content: start;
+    }
+
+    .kanji-tile {
+      aspect-ratio: 1;
+      background: var(--card-bg);
+      border: 2px solid var(--border-panel);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 900;
+      font-family: 'BIZ UDPMincho', 'Yu Mincho', serif;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      position: relative;
+    }
+
+    .kanji-tile:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-gold);
+      transform: translateY(-2px) scale(1.06);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      z-index: 5;
+    }
+
+    .kanji-tile.selected {
+      background: #059669;
+      border-color: #34d399;
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(52, 211, 153, 0.6);
+      transform: scale(1.08);
+      z-index: 6;
+    }
+
+    .kanji-tile.selected::after {
+      content: '●';
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      font-size: 8px;
+      color: var(--accent-gold);
+    }
+
+    /* リスト下部ステータス */
+    .list-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    /* ====================================================
+       右下端・著作権＆エンジン表示（要件準拠）
+       ==================================================== */
+    .legal-attribution {
+      position: fixed;
+      bottom: 8px;
+      right: 12px;
+      z-index: 9999;
+      background: var(--attr-bg);
+      border: 1px solid var(--attr-border);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 11px;
+      color: var(--attr-text);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+      user-select: none;
+    }
+
+    .legal-attribution a {
+      color: #38bdf8;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .legal-attribution a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      .legal-attribution {
+        font-size: 9.5px;
+        padding: 4px 8px;
+        right: 6px;
+        bottom: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ヘッダー -->
+  <header class="app-header">
+    <div class="brand-wrap">
+      <span class="brand-icon">🏫</span>
+      <h1 class="brand-title">
+        漢字かきじゅんナビ
+        <span class="brand-badge">教科書体準拠・色分けアニメ</span>
+      </h1>
+    </div>
+
+    <div class="header-actions">
+      <!-- 黒板 / ホワイトボード切替 -->
+      <button class="btn-header" onclick="toggleTheme()" id="btn-theme" title="黒板モードと教室ホワイトボードモードを切り替えます">
+        🎨 黒板モード ⇄ 白板モード
+      </button>
+
+      <!-- 全画面プロジェクターモード -->
+      <button class="btn-header" onclick="toggleFullscreen()" id="btn-fullscreen" title="プロジェクター・電子黒板向けに全画面表示します">
+        🖥️ 全画面表示
+      </button>
+
+      <!-- 他ページへのリンク -->
+      <a href="kakijun.html" class="btn-header primary" title="手書き判定・なぞり書き練習帳へ移動">
+        ✍️ なぞり書き練習帳へ
+      </a>
+      <a href="index.html" class="btn-header" title="トップゲーム画面へ戻る">
+        🚀 JETへ
+      </a>
+    </div>
+  </header>
+
+  <!-- メイン2カラム（左50% / 右50%） -->
+  <main class="main-layout">
+
+    <!-- ==============================================
+         左側: 書き順アニメーション表示
+         ============================================== -->
+    <section class="left-column">
+      <div class="board-card">
+        <!-- 漢字見出しバー -->
+        <div class="char-banner">
+          <div class="char-banner-left">
+            <span class="grade-tag" id="label-grade">1年生</span>
+            <span class="stroke-count-tag" id="label-strokes">全 7 画</span>
+          </div>
+
+          <!-- マス目・お手本・筆順番号ツール -->
+          <div class="stage-tools">
+            <button class="tool-icon-btn active" id="btn-grid" onclick="cycleGrid()" title="マス目（田の字・米の字・なし）を切り替えます">
+              🔲 マス目: 田の字
+            </button>
+            <button class="tool-icon-btn active" id="btn-outline" onclick="toggleOutline()" title="薄いお手本線の表示切替">
+              💡 お手本線: ON
+            </button>
+            <button class="tool-icon-btn" id="btn-numbers" onclick="toggleNumbers()" title="筆順番号バッジの表示切替">
+              ① 筆順番号: OFF
+            </button>
+            <button class="tool-icon-btn" id="btn-speak" onclick="speakKanji()" title="漢字の読みと用例を音声で読み上げます">
+              🔊 よみあげ
+            </button>
+          </div>
+        </div>
+
+        <!-- 360x360 描画ステージ -->
+        <div class="writer-stage" id="writer-stage">
+          <!-- マス目グリッドSVG -->
+          <svg class="grid-svg" viewBox="0 0 360 360" id="grid-svg">
+            <!-- 田の字（十字点線） -->
+            <line class="grid-line-cross" x1="180" y1="0" x2="180" y2="360" />
+            <line class="grid-line-cross" x1="0" y1="180" x2="360" y2="180" />
+            <!-- 米の字（対角線点線: 切り替え可能） -->
+            <line class="grid-line-diag" id="grid-diag-1" x1="0" y1="0" x2="360" y2="360" style="display:none;" />
+            <line class="grid-line-diag" id="grid-diag-2" x1="360" y1="0" x2="0" y2="360" style="display:none;" />
+          </svg>
+
+          <!-- HanziWriter レンダリングターゲット -->
+          <div id="writer-target"></div>
+
+          <!-- 筆順番号オーバーレイ -->
+          <div id="numbers-overlay" style="display: none;"></div>
+        </div>
+
+        <!-- 筆画カラー凡例バー（1〜5画色分け・6画目以降統一表示） -->
+        <div class="color-legend-wrap">
+          <div class="legend-title-row">
+            <span>🎨 筆順色分け（1〜5画目個別色・6画目以降統一表示）</span>
+            <span id="legend-current-indicator">待機中</span>
+          </div>
+
+          <div class="color-legend-bar" id="legend-chips-container">
+            <div class="legend-chip" id="chip-1" onclick="jumpToStroke(0)">
+              <span class="legend-color-dot" style="background: var(--c-stroke-1);"></span>
+              <span>1画目</span>
+            </div>
+            <div class="legend-chip" id="chip-2" onclick="jumpToStroke(1)">
+              <span class="legend-color-dot" style="background: var(--c-stroke-2);"></span>
+              <span>2画目</span>
+            </div>
+            <div class="legend-chip" id="chip-3" onclick="jumpToStroke(2)">
+              <span class="legend-color-dot" style="background: var(--c-stroke-3);"></span>
+              <span>3画目</span>
+            </div>
+            <div class="legend-chip" id="chip-4" onclick="jumpToStroke(3)">
+              <span class="legend-color-dot" style="background: var(--c-stroke-4);"></span>
+              <span>4画目</span>
+            </div>
+            <div class="legend-chip" id="chip-5" onclick="jumpToStroke(4)">
+              <span class="legend-color-dot" style="background: var(--c-stroke-5);"></span>
+              <span>5画目</span>
+            </div>
+            <div class="legend-chip" id="chip-rest" onclick="jumpToStroke(5)">
+              <span class="legend-color-dot" style="background: var(--c-stroke-rest); border: 1px solid #999;"></span>
+              <span>6画目〜</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 実況ステータステキスト -->
+        <div class="status-alert" id="status-text">
+          「再生」ボタンを押すと正しい書き順が始まります！
+        </div>
+
+        <!-- コントロールボタン群 -->
+        <div class="control-row">
+          <button class="ctrl-btn primary" id="btn-play-pause" onclick="togglePlayPause()">
+            ▶️ さいせい
+          </button>
+          <button class="ctrl-btn" onclick="replayAnimation()">
+            🔁 もういちど
+          </button>
+          <button class="ctrl-btn" onclick="stepPrevStroke()">
+            ⏮ 1画もどす
+          </button>
+          <button class="ctrl-btn" onclick="stepNextStroke()">
+            ⏭ 1画すすむ
+          </button>
+        </div>
+
+        <!-- 速度切替 & くり返し再生スイッチ -->
+        <div class="option-bar">
+          <div class="speed-pills">
+            <span style="font-size:12px; color:var(--text-sub); margin-right:4px;">はやさ:</span>
+            <button class="speed-btn" id="spd-slow" onclick="setSpeed(0.6)">🐢 ゆっくり</button>
+            <button class="speed-btn active" id="spd-normal" onclick="setSpeed(1.0)">🚶 ふつう</button>
+            <button class="speed-btn" id="spd-fast" onclick="setSpeed(1.6)">⚡ はやい</button>
+          </div>
+
+          <label class="loop-toggle-wrap" title="最後まで行ったら自動で最初からループ再生します（ノート書き取り指導に最適）">
+            <input type="checkbox" id="chk-loop" onchange="toggleLoop(this.checked)">
+            <span>🔄 くり返し再生（自動ループ）</span>
+          </label>
+        </div>
+
+        <!-- 漢字情報カード（音読み・訓読み・用例・例文） -->
+        <div class="info-card" style="margin-top: 14px;">
+          <div class="readings-row">
+            <div><strong style="color: var(--accent-gold);">音読み:</strong> <span id="info-on">カ</span></div>
+            <div><strong style="color: #38bdf8;">訓読み:</strong> <span id="info-kun">はな</span></div>
+          </div>
+          <div>
+            <strong style="color: var(--text-sub); font-size: 12px;">📚 代表的な言葉:</strong>
+            <div class="compounds-list" id="info-compounds" style="margin-top: 4px;"></div>
+          </div>
+          <div class="sentence-box" id="info-sentence">
+            さくらが開花する。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         右側: その学年で学習する漢字一覧
+         ============================================== -->
+    <section class="right-column">
+      <div class="kanji-list-card">
+        <!-- 学年タブ -->
+        <div class="grade-tabs" id="grade-tabs">
+          <button class="grade-tab active" data-grade="1" onclick="selectGrade(1)">🌱 1年生 (80)</button>
+          <button class="grade-tab" data-grade="2" onclick="selectGrade(2)">🌿 2年生 (160)</button>
+          <button class="grade-tab" data-grade="3" onclick="selectGrade(3)">🌸 3年生 (200)</button>
+          <button class="grade-tab" data-grade="4" onclick="selectGrade(4)">🍁 4年生 (202)</button>
+          <button class="grade-tab" data-grade="5" onclick="selectGrade(5)">⚡ 5年生 (193)</button>
+          <button class="grade-tab" data-grade="6" onclick="selectGrade(6)">🔥 6年生 (191)</button>
+        </div>
+
+        <!-- 検索・絞り込み & ランダム -->
+        <div class="filter-bar">
+          <input type="text" class="search-input" id="search-input" placeholder="🔍 漢字・よみ（例: はな、カ、花）で検索..." oninput="filterKanji()">
+          <button class="btn-random" onclick="pickRandomKanji()">
+            🎲 ランダム
+          </button>
+        </div>
+
+        <!-- 漢字タイルグリッド（スクロールエリア） -->
+        <div class="kanji-grid-scroll" id="kanji-grid"></div>
+
+        <!-- リスト下部ステータス -->
+        <div class="list-footer">
+          <span id="kanji-count-status">表示中: 1年生 (80字中 80字)</span>
+          <span>⌨️ [Space]:再生/停止 [←/→]:1画送り [R]:最初から</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==============================================
+       右下端・著作権＆エンジン表記（要件準拠）
+       ============================================== -->
+  <footer class="legal-attribution" id="legal-attribution">
+    <span>Powered by <a href="https://chanind.github.io/hanzi-writer/" target="_blank" rel="noopener">HanziWriter</a> &amp; <a href="https://github.com/parsimonhi/animCJK" target="_blank" rel="noopener">hanzi-writer-data-jp</a> (AnimCJK / MakeMeAHanzi)</span>
+    <span style="opacity: 0.5;">｜</span>
+    <span>教科書体・文科省学習指導要領配当準拠</span>
+  </footer>
+
+  <script>
+    // ==========================================
+    // 状態管理
+    // ==========================================
+    let currentGrade = 1;
+    let currentChar = '花';
+    let currentSpeed = 1.0;
+    let showOutline = true;
+    let showNumbers = false;
+    let currentGridMode = 'cross'; // 'cross' (田) | 'diag' (米) | 'none' (なし)
+    let currentTheme = 'chalkboard'; // 'chalkboard' | 'whiteboard'
+    let isLoopEnabled = false;
+
+    let writerInstance = null;
+    let currentCharData = null;
+    let isPlaying = false;
+    let isPaused = false;
+    let currentStrokeIdx = -1;
+    let totalStrokes = 0;
+    let loopTimeoutId = null;
+
+    // キャッシュ
+    const charDataCache = {};
+
+    // 筆画カラー定義（1〜5画目個別色、6画目以降統一色）
+    const CHALK_STROKE_COLORS = [
+      { r: 255, g: 59, b: 92, a: 1, hex: '#ff3b5c', name: '赤' },     // 1画目: 鮮烈チョーク赤
+      { r: 56, g: 189, b: 248, a: 1, hex: '#38bdf8', name: '水色' },   // 2画目: 水色
+      { r: 74, g: 222, b: 128, a: 1, hex: '#4ade80', name: '黄緑' },   // 3画目: 黄緑
+      { r: 251, g: 191, b: 36, a: 1, hex: '#fbbf24', name: '黄橙' },   // 4画目: 黄橙
+      { r: 192, g: 132, b: 252, a: 1, hex: '#c084fc', name: '藤紫' },  // 5画目: 藤紫
+    ];
+    const CHALK_STROKE_REST = { r: 248, g: 250, b: 252, a: 1, hex: '#f8fafc', name: '白' }; // 6画目以降: 統一ホワイト
+
+    const INK_STROKE_COLORS = [
+      { r: 230, g: 0, b: 51, a: 1, hex: '#e60033', name: '赤' },     // 1画目: 鮮やか赤
+      { r: 0, g: 102, b: 204, a: 1, hex: '#0066cc', name: '青' },    // 2画目: 鮮やか青
+      { r: 0, g: 143, b: 57, a: 1, hex: '#008f39', name: '緑' },     // 3画目: 鮮やか緑
+      { r: 245, g: 124, b: 0, a: 1, hex: '#f57c00', name: '橙' },    // 4画目: 鮮やか橙
+      { r: 142, g: 36, b: 170, a: 1, hex: '#8e24aa', name: '紫' },   // 5画目: 鮮やか紫
+    ];
+    const INK_STROKE_REST = { r: 51, g: 65, b: 85, a: 1, hex: '#334155', name: '濃紺' }; // 6画目以降: 統一濃紺
+
+    const ALL_GRADE_LIST = {
+      1: "一右雨円王音下火花貝気九休玉金空月犬見五口校左三山子四糸字耳七車手十出女小上森人水正生青夕石赤千川先早草足村大男竹中虫町天田土二日入学年白八百文木本名目立力林六".split(""),
+      2: "引羽雲園遠何科夏家歌画回会海絵外角楽活間丸岩顔汽記帰弓牛魚京強教近兄形計元言原戸古午後語工公広交光考行高黄合谷国黒今才細作算止市矢姉思紙寺自時室社弱首秋週春書少場色食心新親図数西声星晴切雪船線前組走多太体台地池知茶昼長鳥朝直通弟店点電刀冬当東答頭同道読内南肉馬売買麦半番父風分聞米歩母方北毎妹万明鳴毛門夜野友用曜来里理話".split(""),
+      3: "悪安暗医委意育員院飲運泳駅央横屋温化荷界開階寒感漢館岸起期客究急級宮球去橋業曲局銀区苦具君係軽血決研県庫湖向幸港号根祭皿仕死使始指歯詩次事持式実写者主守取酒受州拾終習集住重宿所暑助昭消商章勝乗植申身神真深進世整昔全相送想息速族他打対待代第題炭短談着注柱丁帳調追定庭笛鉄転都度投豆島湯登等動童農波配倍箱畑発反坂板皮悲美鼻筆氷表秒病品負部服福物平返勉放味命面問役薬由油有遊予羊洋葉陽様落流旅両緑礼列練路和".split(""),
+      4: "愛案以衣位茨印英栄媛塩岡億加果貨課芽賀改械害街各覚潟完官管関観願岐希季旗器機議求泣給挙漁共協鏡競極熊訓軍郡群径景芸欠結建健験固功好香候康佐差菜最埼材崎昨札刷察参産散残氏司試児治滋辞鹿失借種周祝順初松笑唱焼照城縄臣信井成省清静席積折節説浅戦選然争倉巣束側続卒孫帯隊達単置仲沖兆低底的典伝徒努灯働特徳栃奈梨熱念敗梅博阪飯飛必票標不夫付府阜富副兵別辺変便包法望牧末満未民無約勇要養浴利陸良料量輪類令冷例連老労録".split(""),
+      5: "圧囲移因永営衛易益液演応往桜可仮価河過快解格確額刊幹慣眼紀基寄規喜技義逆久旧救居許境均禁句型経潔件険検限現減故個護効厚耕航鉱構興講告混査再災妻採際在財罪殺雑酸賛士支史志枝師資飼示似識質舎謝授修述術準序招証象賞条状常情織職制性政勢精製税責績接設絶祖素総造像増則測属率損貸態団断築貯張停提程適統堂銅導得毒独任燃能破犯判版比肥非費備評貧布婦武復複仏粉編弁保墓報豊防貿暴脈務夢迷綿輸余容略留領歴".split(""),
+      6: "胃異遺域宇映延沿恩我灰拡革閣割株干巻看簡危机揮貴疑吸供胸郷勤筋系敬警劇激穴券絹権憲源厳己呼誤后孝皇紅降鋼刻穀骨困砂座済裁策冊蚕至私姿視詞誌磁射捨尺若樹収宗就衆従縦縮熟純処署諸除承将傷障蒸針仁垂推寸盛聖誠舌宣専泉洗染銭善奏窓創装層操蔵臓存尊退宅担探誕段暖値宙忠著庁頂腸潮賃痛敵展討党糖届難乳認納脳派拝背肺俳班晩否批秘俵腹奮並陛閉片補暮宝訪亡忘棒枚幕密盟模訳郵優預幼欲翌乱卵覧裏律臨朗論".split("")
+    };
+
+    // ==========================================
+    // 初期化
+    // ==========================================
+    function init() {
+      const params = new URLSearchParams(window.location.search);
+      const urlChar = params.get('char');
+      const urlGrade = params.get('grade');
+
+      if (urlGrade && ALL_GRADE_LIST[urlGrade]) {
+        currentGrade = parseInt(urlGrade, 10);
+      }
+
+      if (urlChar && window.KANJI_DATA && window.KANJI_DATA[urlChar]) {
+        currentChar = urlChar;
+        currentGrade = window.KANJI_DATA[urlChar].grade || currentGrade;
+      }
+
+      setupKeyboardShortcuts();
+      updateGradeTabsUI();
+      renderKanjiGrid();
+      loadCurrentKanji(currentChar);
+    }
+
+    // ==========================================
+    // 漢字読み込み & HanziWriter初期化
+    // ==========================================
+    function loadCurrentKanji(char) {
+      currentChar = char;
+      stopLoop();
+      isPlaying = false;
+      isPaused = false;
+      currentStrokeIdx = -1;
+      updatePlayButtonUI(false);
+
+      // URLパラメータの同期
+      const url = new URL(window.location);
+      url.searchParams.set('char', char);
+      url.searchParams.set('grade', currentGrade);
+      window.history.replaceState({}, '', url);
+
+      // 右側グリッドの選択ハイライト更新
+      updateGridSelection();
+
+      // 漢字情報パネル更新
+      updateKanjiInfoCard();
+
+      // HanziWriter初期化
+      initWriter(char);
+    }
+
+    function initWriter(char) {
+      const target = document.getElementById('writer-target');
+      target.innerHTML = '';
+      document.getElementById('status-text').textContent = `「${char}」のお手本を準備中...`;
+
+      try {
+        writerInstance = HanziWriter.create('writer-target', char, {
+          width: 360,
+          height: 360,
+          padding: 25,
+          showOutline: showOutline,
+          strokeAnimationSpeed: currentSpeed,
+          delayBetweenStrokes: Math.max(120, Math.round(260 / currentSpeed)),
+          strokeColor: '#059669', // デフォルトフォールバック
+          outlineColor: currentTheme === 'chalkboard' ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.15)',
+          showCharacter: false,
+          charDataLoader: function(c, onComplete, onErr) {
+            if (charDataCache[c]) {
+              onComplete(charDataCache[c]);
+              return;
+            }
+            // 1. 日本語標準教科書体データ (hanzi-writer-data-jp: AnimCJK/MakeMeAHanzi準拠)
+            const urlJp = `https://cdn.jsdelivr.net/npm/hanzi-writer-data-jp@latest/${encodeURIComponent(c)}.json`;
+            fetch(urlJp)
+              .then(res => {
+                if (!res.ok) throw new Error('JP data not found');
+                return res.json();
+              })
+              .then(data => {
+                charDataCache[c] = data;
+                onComplete(data);
+              })
+              .catch(err => {
+                console.warn('JP data fallback:', err);
+                // 2. フォールバック
+                const urlFallback = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@latest/${encodeURIComponent(c)}.json`;
+                fetch(urlFallback)
+                  .then(r => r.json())
+                  .then(d => {
+                    charDataCache[c] = d;
+                    onComplete(d);
+                  })
+                  .catch(onErr);
+              });
+          },
+          onLoadCharDataSuccess: function(charData) {
+            currentCharData = charData;
+            totalStrokes = (charData.strokes && charData.strokes.length) || 0;
+            document.getElementById('label-strokes').textContent = `全 ${totalStrokes} 画`;
+            
+            // 色分け適用
+            applyPerStrokeColors(writerInstance, currentTheme);
+            updateLegendChipsUI(totalStrokes);
+            updateNumbersOverlay(charData);
+
+            document.getElementById('status-text').innerHTML = `「<strong>${currentChar}</strong>」の準備が完了しました！自動で書き順が始まります。`;
+            
+            // 漢字切り替え時は自動でアニメーション再生
+            playAllStrokes();
+          },
+          onLoadCharDataError: function(err) {
+            console.error('Error loading kanji data:', err);
+            document.getElementById('status-text').innerHTML = `<span style="color:#ff3b5c;">⚠️ 漢字データの取得に失敗しました。</span>`;
+          }
+        });
+      } catch (e) {
+        console.error('Writer initialization error:', e);
+      }
+    }
+
+    // ==========================================
+    // 🎨 1〜5画目個別色 & 6画目以降統一色 適用ロジック
+    // ==========================================
+    function applyPerStrokeColors(writer, theme) {
+      if (!writer || !writer._renderer || !writer._renderer._mainCharRenderer) return;
+      const srs = writer._renderer._mainCharRenderer._strokeRenderers || [];
+      const palette = theme === 'chalkboard' ? CHALK_STROKE_COLORS : INK_STROKE_COLORS;
+      const restColor = theme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
+
+      srs.forEach((sr, idx) => {
+        const col = idx < palette.length ? palette[idx] : restColor;
+        // HanziWriter内部レンダラーの_getColor関数を動的オーバーライド
+        sr._getColor = () => ({ r: col.r, g: col.g, b: col.b, a: col.a });
+        if (sr._animationPath) {
+          sr._animationPath.setAttribute('stroke', `rgba(${col.r}, ${col.g}, ${col.b}, ${col.a})`);
+          sr._animationPath.style.stroke = `rgba(${col.r}, ${col.g}, ${col.b}, ${col.a})`;
+        }
+      });
+    }
+
+    // 筆画カラー凡例バーの更新
+    function updateLegendChipsUI(count) {
+      const container = document.getElementById('legend-chips-container');
+      const palette = currentTheme === 'chalkboard' ? CHALK_STROKE_COLORS : INK_STROKE_COLORS;
+      const restColor = currentTheme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
+
+      container.innerHTML = '';
+      const maxChips = Math.min(count, 5);
+
+      for (let i = 0; i < maxChips; i++) {
+        const chip = document.createElement('div');
+        chip.className = 'legend-chip';
+        chip.id = `legend-chip-${i}`;
+        chip.title = `第${i + 1}画まで進める`;
+        chip.onclick = () => jumpToStroke(i);
+        chip.innerHTML = `
+          <span class="legend-color-dot" style="background: ${palette[i].hex};"></span>
+          <span>${i + 1}画目</span>
+        `;
+        container.appendChild(chip);
+      }
+
+      if (count >= 6) {
+        const restChip = document.createElement('div');
+        restChip.className = 'legend-chip';
+        restChip.id = 'legend-chip-rest';
+        restChip.title = `第6画目以降（統一色）`;
+        restChip.onclick = () => jumpToStroke(5);
+        restChip.innerHTML = `
+          <span class="legend-color-dot" style="background: ${restColor.hex}; border: 1px solid #888;"></span>
+          <span>6画〜(${count}画)</span>
+        `;
+        container.appendChild(restChip);
+      }
+    }
+
+    function highlightLegendChip(strokeIdx) {
+      document.querySelectorAll('.legend-chip').forEach(c => c.classList.remove('active-drawing'));
+      const indicator = document.getElementById('legend-current-indicator');
+
+      if (strokeIdx < 0) {
+        indicator.textContent = '待機中';
+        return;
+      }
+
+      if (strokeIdx < 5) {
+        const chip = document.getElementById(`legend-chip-${strokeIdx}`);
+        if (chip) chip.classList.add('active-drawing');
+        const palette = currentTheme === 'chalkboard' ? CHALK_STROKE_COLORS : INK_STROKE_COLORS;
+        indicator.innerHTML = `✍️ <strong>第 ${strokeIdx + 1} 画目</strong>（${palette[strokeIdx].name}）を描画中`;
+      } else {
+        const restChip = document.getElementById('legend-chip-rest');
+        if (restChip) restChip.classList.add('active-drawing');
+        const restColor = currentTheme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
+        indicator.innerHTML = `✍️ <strong>第 ${strokeIdx + 1} 画目</strong>（統一色: ${restColor.name}）を描画中`;
+      }
+    }
+
+    // ==========================================
+    // 筆順番号オーバーレイの座標計算 & 描画
+    // ==========================================
+    function updateNumbersOverlay(charData) {
+      const overlay = document.getElementById('numbers-overlay');
+      overlay.innerHTML = '';
+      if (!charData || !charData.medians) return;
+
+      const stage = 360;
+      const padding = 25;
+      const scale = (stage - 2 * padding) / 1024;
+      const xOffset = padding;
+      const yOffset = 124 * scale + padding;
+
+      const palette = currentTheme === 'chalkboard' ? CHALK_STROKE_COLORS : INK_STROKE_COLORS;
+      const restColor = currentTheme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
+
+      charData.medians.forEach((m, idx) => {
+        if (!m || m.length === 0) return;
+        const pt = m[0];
+        const sx = Math.round(xOffset + pt[0] * scale);
+        const sy = Math.round((stage - yOffset) - pt[1] * scale);
+
+        const badge = document.createElement('div');
+        badge.className = 'number-badge';
+        badge.textContent = idx + 1;
+        badge.style.left = `${sx}px`;
+        badge.style.top = `${sy}px`;
+
+        const col = idx < palette.length ? palette[idx] : restColor;
+        badge.style.borderColor = col.hex;
+        badge.style.color = col.hex;
+
+        overlay.appendChild(badge);
+      });
+    }
+
+    // ==========================================
+    // 🎛️ 再生コントロール（順次描画 & ループ）
+    // ==========================================
+    async function playAllStrokes() {
+      if (!writerInstance) return;
+      if (isPlaying && !isPaused) return;
+
+      isPlaying = true;
+      isPaused = false;
+      updatePlayButtonUI(true);
+
+      if (currentStrokeIdx >= totalStrokes - 1) {
+        currentStrokeIdx = -1;
+        writerInstance.hideCharacter();
+      }
+
+      applyPerStrokeColors(writerInstance, currentTheme);
+
+      while (isPlaying && !isPaused && currentStrokeIdx < totalStrokes - 1) {
+        currentStrokeIdx++;
+        highlightLegendChip(currentStrokeIdx);
+        updateProgressStatus(currentStrokeIdx);
+
+        try {
+          await writerInstance.animateStroke(currentStrokeIdx);
+        } catch (e) {
+          break;
+        }
+
+        if (!isPlaying || isPaused) break;
+
+        const delay = Math.max(120, Math.round(260 / currentSpeed));
+        await new Promise(r => setTimeout(r, delay));
+      }
+
+      if (currentStrokeIdx >= totalStrokes - 1) {
+        highlightLegendChip(-1);
+        document.getElementById('status-text').innerHTML = `🎉 <strong>全 ${totalStrokes} 画の書き順が完了しました！</strong>`;
+        
+        if (isLoopEnabled && isPlaying && !isPaused) {
+          clearTimeout(loopTimeoutId);
+          loopTimeoutId = setTimeout(() => {
+            if (isLoopEnabled && isPlaying && !isPaused) {
+              currentStrokeIdx = -1;
+              writerInstance.hideCharacter();
+              playAllStrokes();
+            }
+          }, 1500); // 1.5秒待機後に次ループ
+        } else {
+          isPlaying = false;
+          isPaused = false;
+          updatePlayButtonUI(false);
+        }
+      }
+    }
+
+    function togglePlayPause() {
+      if (!writerInstance) return;
+      if (isPlaying) {
+        if (isPaused) {
+          // 再開
+          isPaused = false;
+          updatePlayButtonUI(true);
+          playAllStrokes();
+        } else {
+          // 一時停止
+          isPaused = true;
+          stopLoop();
+          updatePlayButtonUI(false);
+          document.getElementById('status-text').innerHTML = `⏸ <strong>一時停止中</strong>（第 ${currentStrokeIdx + 1} 画まで表示）`;
+        }
+      } else {
+        playAllStrokes();
+      }
+    }
+
+    function replayAnimation() {
+      if (!writerInstance) return;
+      stopLoop();
+      isPlaying = false;
+      isPaused = false;
+      currentStrokeIdx = -1;
+      writerInstance.hideCharacter();
+      playAllStrokes();
+    }
+
+    function stepPrevStroke() {
+      if (!writerInstance || totalStrokes === 0) return;
+      stopLoop();
+      isPlaying = false;
+      isPaused = false;
+      updatePlayButtonUI(false);
+
+      if (currentStrokeIdx > 0) {
+        currentStrokeIdx--;
+      } else {
+        currentStrokeIdx = -1;
+      }
+
+      showStrokesUpTo(currentStrokeIdx);
+      highlightLegendChip(currentStrokeIdx);
+      updateProgressStatus(currentStrokeIdx);
+    }
+
+    async function stepNextStroke() {
+      if (!writerInstance || totalStrokes === 0) return;
+      stopLoop();
+      isPlaying = false;
+      isPaused = false;
+      updatePlayButtonUI(false);
+
+      if (currentStrokeIdx < totalStrokes - 1) {
+        currentStrokeIdx++;
+        highlightLegendChip(currentStrokeIdx);
+        updateProgressStatus(currentStrokeIdx);
+        applyPerStrokeColors(writerInstance, currentTheme);
+        await writerInstance.animateStroke(currentStrokeIdx);
+      }
+    }
+
+    function jumpToStroke(targetIdx) {
+      if (!writerInstance || totalStrokes === 0) return;
+      stopLoop();
+      isPlaying = false;
+      isPaused = false;
+      updatePlayButtonUI(false);
+
+      currentStrokeIdx = Math.min(targetIdx, totalStrokes - 1);
+      showStrokesUpTo(currentStrokeIdx);
+      highlightLegendChip(currentStrokeIdx);
+      updateProgressStatus(currentStrokeIdx);
+    }
+
+    function showStrokesUpTo(targetIdx) {
+      if (!writerInstance || !writerInstance._renderer || !writerInstance._renderer._mainCharRenderer) return;
+      const srs = writerInstance._renderer._mainCharRenderer._strokeRenderers || [];
+      const group = writerInstance._renderer._mainCharRenderer._group;
+      if (group) {
+        group.style.opacity = '1';
+        group.style.display = 'block';
+      }
+      applyPerStrokeColors(writerInstance, currentTheme);
+
+      srs.forEach((sr, idx) => {
+        if (sr._animationPath) {
+          if (idx <= targetIdx) {
+            sr._animationPath.style.strokeDashoffset = '0';
+            sr._animationPath.style.opacity = '1';
+          } else {
+            sr._animationPath.style.strokeDashoffset = (sr._pathLength || 2000).toString();
+            sr._animationPath.style.opacity = '0';
+          }
+        }
+      });
+    }
+
+    function stopLoop() {
+      if (loopTimeoutId) {
+        clearTimeout(loopTimeoutId);
+        loopTimeoutId = null;
+      }
+    }
+
+    function toggleLoop(val) {
+      isLoopEnabled = val;
+      if (isLoopEnabled && !isPlaying) {
+        playAllStrokes();
+      }
+    }
+
+    function updatePlayButtonUI(playing) {
+      const btn = document.getElementById('btn-play-pause');
+      if (playing) {
+        btn.innerHTML = '⏸ いちじていし';
+        btn.classList.add('active');
+      } else {
+        btn.innerHTML = '▶️ さいせい';
+        btn.classList.remove('active');
+      }
+    }
+
+    function updateProgressStatus(idx) {
+      if (idx < 0) {
+        document.getElementById('status-text').innerHTML = `「<strong>${currentChar}</strong>」の最初の状態です。「再生」を押してください。`;
+      } else {
+        const palette = currentTheme === 'chalkboard' ? CHALK_STROKE_COLORS : INK_STROKE_COLORS;
+        const restColor = currentTheme === 'chalkboard' ? CHALK_STROKE_REST : INK_STROKE_REST;
+        const colorName = idx < palette.length ? palette[idx].name : restColor.name;
+        document.getElementById('status-text').innerHTML = `✍️ <strong>第 ${idx + 1} 画</strong> を表示中（${colorName}）/ 全 ${totalStrokes} 画`;
+      }
+    }
+
+    // ==========================================
+    // ⚙️ 設定切り替え（速度・マス目・ガイド・番号・テーマ）
+    // ==========================================
+    function setSpeed(spd) {
+      currentSpeed = spd;
+      ['slow', 'normal', 'fast'].forEach(id => {
+        document.getElementById(`spd-${id}`).classList.remove('active');
+      });
+      if (spd <= 0.7) document.getElementById('spd-slow').classList.add('active');
+      else if (spd >= 1.5) document.getElementById('spd-fast').classList.add('active');
+      else document.getElementById('spd-normal').classList.add('active');
+
+      if (writerInstance) {
+        loadCurrentKanji(currentChar);
+      }
+    }
+
+    function cycleGrid() {
+      const btn = document.getElementById('btn-grid');
+      const diag1 = document.getElementById('grid-diag-1');
+      const diag2 = document.getElementById('grid-diag-2');
+      const crosses = document.querySelectorAll('.grid-line-cross');
+
+      if (currentGridMode === 'cross') {
+        currentGridMode = 'diag';
+        btn.innerHTML = '🔲 マス目: 米の字';
+        diag1.style.display = 'block';
+        diag2.style.display = 'block';
+        crosses.forEach(c => c.style.display = 'block');
+      } else if (currentGridMode === 'diag') {
+        currentGridMode = 'none';
+        btn.innerHTML = '🔲 マス目: なし';
+        btn.classList.remove('active');
+        diag1.style.display = 'none';
+        diag2.style.display = 'none';
+        crosses.forEach(c => c.style.display = 'none');
+      } else {
+        currentGridMode = 'cross';
+        btn.innerHTML = '🔲 マス目: 田の字';
+        btn.classList.add('active');
+        diag1.style.display = 'none';
+        diag2.style.display = 'none';
+        crosses.forEach(c => c.style.display = 'block');
+      }
+    }
+
+    function toggleOutline() {
+      showOutline = !showOutline;
+      const btn = document.getElementById('btn-outline');
+      btn.textContent = showOutline ? '💡 お手本線: ON' : '💡 お手本線: OFF';
+      btn.classList.toggle('active', showOutline);
+      if (writerInstance) {
+        if (showOutline) writerInstance.showOutline();
+        else writerInstance.hideOutline();
+      }
+    }
+
+    function toggleNumbers() {
+      showNumbers = !showNumbers;
+      const btn = document.getElementById('btn-numbers');
+      btn.textContent = showNumbers ? '① 筆順番号: ON' : '① 筆順番号: OFF';
+      btn.classList.toggle('active', showNumbers);
+      document.getElementById('numbers-overlay').style.display = showNumbers ? 'block' : 'none';
+    }
+
+    function toggleTheme() {
+      currentTheme = currentTheme === 'chalkboard' ? 'whiteboard' : 'chalkboard';
+      document.documentElement.setAttribute('data-theme', currentTheme);
+      const btn = document.getElementById('btn-theme');
+      btn.innerHTML = currentTheme === 'chalkboard' ? '🎨 黒板モード ⇄ 白板モード' : '🎨 白板モード ⇄ 黒板モード';
+
+      if (writerInstance) {
+        applyPerStrokeColors(writerInstance, currentTheme);
+        updateLegendChipsUI(totalStrokes);
+        if (currentCharData) updateNumbersOverlay(currentCharData);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    // 音声読み上げ（Web Speech API）
+    function speakKanji() {
+      if (!('speechSynthesis' in window)) {
+        alert('お使いの端末・ブラウザは音声読み上げに対応していません。');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const data = (window.KANJI_DATA && window.KANJI_DATA[currentChar]) || {};
+      const onText = data.on && data.on !== '—' ? `音読み、${data.on}。` : '';
+      const kunText = data.kun && data.kun !== '—' ? `訓読み、${data.kun}。` : '';
+      const compText = data.primaryCompound ? `代表的な言葉、${data.primaryCompound}。` : '';
+      const sentenceText = data.primarySentence ? `例文、${data.primarySentence}` : '';
+
+      const text = `${currentChar}。${onText}${kunText}${compText}${sentenceText}`;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'ja-JP';
+      utter.rate = 0.92;
+      window.speechSynthesis.speak(utter);
+    }
+
+    // ==========================================
+    // 📋 右側: 漢字グリッド・学年タブ・検索
+    // ==========================================
+    function selectGrade(g) {
+      currentGrade = parseInt(g, 10);
+      updateGradeTabsUI();
+      document.getElementById('search-input').value = '';
+      renderKanjiGrid();
+
+      const list = ALL_GRADE_LIST[currentGrade] || [];
+      if (list.length > 0) {
+        loadCurrentKanji(list[0]);
+      }
+    }
+
+    function updateGradeTabsUI() {
+      document.querySelectorAll('.grade-tab').forEach(t => {
+        t.classList.toggle('active', parseInt(t.dataset.grade, 10) === currentGrade);
+      });
+      document.getElementById('label-grade').textContent = `${currentGrade}年生`;
+    }
+
+    function renderKanjiGrid(filteredList = null) {
+      const grid = document.getElementById('kanji-grid');
+      grid.innerHTML = '';
+      const list = filteredList || (ALL_GRADE_LIST[currentGrade] || []);
+
+      list.forEach(ch => {
+        const tile = document.createElement('div');
+        tile.className = 'kanji-tile';
+        tile.textContent = ch;
+        tile.id = `tile-${ch}`;
+        tile.onclick = () => loadCurrentKanji(ch);
+        if (ch === currentChar) tile.classList.add('selected');
+        grid.appendChild(tile);
+      });
+
+      const totalGrade = (ALL_GRADE_LIST[currentGrade] || []).length;
+      document.getElementById('kanji-count-status').textContent = `表示中: ${currentGrade}年生 (${totalGrade}字中 ${list.length}字)`;
+    }
+
+    function updateGridSelection() {
+      document.querySelectorAll('.kanji-tile').forEach(t => t.classList.remove('selected'));
+      const activeTile = document.getElementById(`tile-${currentChar}`);
+      if (activeTile) {
+        activeTile.classList.add('selected');
+        activeTile.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function filterKanji() {
+      const query = document.getElementById('search-input').value.trim();
+      if (!query) {
+        renderKanjiGrid();
+        return;
+      }
+
+      const list = ALL_GRADE_LIST[currentGrade] || [];
+      const dataMap = window.KANJI_DATA || {};
+
+      const filtered = list.filter(ch => {
+        if (ch.includes(query)) return true;
+        const d = dataMap[ch];
+        if (!d) return false;
+        if (d.on && d.on.includes(query)) return true;
+        if (d.kun && d.kun.includes(query)) return true;
+        if (d.primaryCompound && d.primaryCompound.includes(query)) return true;
+        if (d.primaryKana && d.primaryKana.includes(query)) return true;
+        return false;
+      });
+
+      renderKanjiGrid(filtered);
+    }
+
+    function pickRandomKanji() {
+      const list = ALL_GRADE_LIST[currentGrade] || [];
+      if (list.length > 0) {
+        const rand = list[Math.floor(Math.random() * list.length)];
+        loadCurrentKanji(rand);
+      }
+    }
+
+    function updateKanjiInfoCard() {
+      const data = (window.KANJI_DATA && window.KANJI_DATA[currentChar]) || {};
+      document.getElementById('info-on').textContent = data.on || '—';
+      document.getElementById('info-kun').textContent = data.kun || '—';
+      document.getElementById('info-sentence').textContent = data.primarySentence || '—';
+
+      const compContainer = document.getElementById('info-compounds');
+      compContainer.innerHTML = '';
+      (data.compounds || []).forEach(w => {
+        const span = document.createElement('span');
+        span.className = 'compound-pill';
+        span.textContent = w;
+        compContainer.appendChild(span);
+      });
+    }
+
+    // ==========================================
+    // ⌨️ キーボードショートカット（教卓・リモコン用）
+    // ==========================================
+    function setupKeyboardShortcuts() {
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          togglePlayPause();
+        } else if (e.code === 'ArrowLeft') {
+          e.preventDefault();
+          stepPrevStroke();
+        } else if (e.code === 'ArrowRight') {
+          e.preventDefault();
+          stepNextStroke();
+        } else if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          replayAnimation();
+        } else if (e.key === 'l' || e.key === 'L') {
+          e.preventDefault();
+          const chk = document.getElementById('chk-loop');
+          chk.checked = !chk.checked;
+          toggleLoop(chk.checked);
+        } else if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleFullscreen();
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
