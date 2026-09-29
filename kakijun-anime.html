@@ -304,7 +304,7 @@
       100% { opacity: 1; transform: scale(1); }
     }
 
-    /* 360x360 描画ステージ */
+    /* 360x360 描画ステージ（拡大対応） */
     .writer-stage {
       position: relative;
       width: 360px;
@@ -316,18 +316,30 @@
       margin: 4px 0 14px 0;
       overflow: hidden;
       touch-action: none;
-      transition: width 0.2s, height 0.2s;
+      transition: width 0.25s ease, height 0.25s ease;
     }
 
     .writer-stage.jumbo {
-      width: 420px;
-      height: 420px;
+      width: 480px;
+      height: 480px;
+      max-width: 100%;
+      aspect-ratio: 1 / 1;
     }
 
-    @media (max-width: 440px) {
-      .writer-stage, .writer-stage.jumbo {
-        width: 300px;
-        height: 300px;
+    .writer-stage.jumbo .number-badge {
+      width: 24px;
+      height: 24px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 540px) {
+      .writer-stage {
+        width: min(340px, 92vw);
+        height: min(340px, 92vw);
+      }
+      .writer-stage.jumbo {
+        width: min(440px, 96vw);
+        height: min(440px, 96vw);
       }
     }
 
@@ -966,6 +978,9 @@
             <button class="tool-icon-btn" id="btn-speak" onclick="speakKanji()" title="漢字の読みと用例を音声で読み上げます">
               🔊 よみあげ
             </button>
+            <button class="tool-icon-btn" id="btn-stage-zoom" onclick="toggleStageZoom()" title="文字とステージを大きく拡大表示します">
+              🔍 拡大
+            </button>
           </div>
         </div>
 
@@ -1285,6 +1300,13 @@
             totalStrokes = (charData.strokes && charData.strokes.length) || 0;
             document.getElementById('label-strokes').textContent = `全 ${totalStrokes} 画`;
             
+            // HanziWriterのSVGにviewBoxを確実に付与（ステージ拡大時に漢字全体が完全連動して拡大）
+            const svgEl = target.querySelector('svg');
+            if (svgEl) {
+              svgEl.setAttribute('viewBox', '0 0 360 360');
+              svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+            }
+
             // 色分け適用
             applyPerStrokeColors(writerInstance, currentTheme);
             updateLegendChipsUI(totalStrokes);
@@ -1300,6 +1322,13 @@
             document.getElementById('status-text').innerHTML = `<span style="color:#ff3b5c;">⚠️ 漢字データの取得に失敗しました。</span>`;
           }
         });
+
+        // 生成直後のSVGにも即座にviewBoxを適用
+        const initialSvg = target.querySelector('svg');
+        if (initialSvg) {
+          initialSvg.setAttribute('viewBox', '0 0 360 360');
+          initialSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        }
       } catch (e) {
         console.error('Writer initialization error:', e);
       }
@@ -1336,6 +1365,12 @@
       // 2. DOM経由でも .main-stroke-group のみに対して確実に適用
       const targetEl = document.getElementById('writer-target');
       if (targetEl) {
+        const svgEl = targetEl.querySelector('svg');
+        if (svgEl && !svgEl.getAttribute('viewBox')) {
+          svgEl.setAttribute('viewBox', '0 0 360 360');
+          svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        }
+
         const mainGroup = targetEl.querySelector('.main-stroke-group') || targetEl.querySelector('svg > g > g:nth-child(2)');
         if (mainGroup) {
           const paths = mainGroup.querySelectorAll('path');
@@ -1440,8 +1475,8 @@
         const badge = document.createElement('div');
         badge.className = 'number-badge';
         badge.textContent = idx + 1;
-        badge.style.left = `${sx}px`;
-        badge.style.top = `${sy}px`;
+        badge.style.left = `${((sx / stage) * 100).toFixed(2)}%`;
+        badge.style.top = `${((sy / stage) * 100).toFixed(2)}%`;
         badge.dataset.strokeIdx = idx;
 
         const col = idx < palette.length ? palette[idx] : restColor;
@@ -1795,8 +1830,23 @@
       isStageZoomed = !isStageZoomed;
       const stage = document.getElementById('writer-stage');
       const btn = document.getElementById('btn-zoom');
-      stage.classList.toggle('jumbo', isStageZoomed);
-      btn.innerHTML = isStageZoomed ? '🔍 標準サイズ' : '🔍 拡大';
+      const stageBtn = document.getElementById('btn-stage-zoom');
+      if (stage) stage.classList.toggle('jumbo', isStageZoomed);
+      if (btn) {
+        btn.innerHTML = isStageZoomed ? '🔍 標準サイズ' : '🔍 拡大';
+        btn.classList.toggle('active', isStageZoomed);
+      }
+      if (stageBtn) {
+        stageBtn.innerHTML = isStageZoomed ? '🔍 標準' : '🔍 拡大';
+        stageBtn.classList.toggle('active', isStageZoomed);
+      }
+
+      // HanziWriterのSVGにviewBoxを確実に付与（ステージ拡大時に漢字も完全連動拡大）
+      const svg = document.querySelector('#writer-target svg');
+      if (svg) {
+        svg.setAttribute('viewBox', '0 0 360 360');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      }
     }
 
     function toggleFullscreen() {
