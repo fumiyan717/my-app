@@ -3294,7 +3294,12 @@
 
   <!-- BGM用オーディオ要素（ブラウザ互換性と確実な再生のためDOM配置） -->
   <audio id="bgm-home" src="./assets/bgm_home.mp3" preload="auto" loop playsinline></audio>
-  <audio id="bgm-battle" src="./assets/bgm_battle.mp3" preload="auto" loop playsinline></audio>
+  <audio id="bgm-battle" preload="auto" loop playsinline>
+    <source src="assets/Fierro%20y%20Bronce.mp3" type="audio/mpeg">
+    <source src="assets/Fierro y Bronce.mp3" type="audio/mpeg">
+    <source src="Fierro%20y%20Bronce.mp3" type="audio/mpeg">
+    <source src="./assets/bgm_battle.mp3" type="audio/mpeg">
+  </audio>
 
 <div id="game-container">
   <!-- 問題画面の背景動画 (assets/問題背景.mp4) -->
@@ -4920,6 +4925,11 @@ function toggleSound() {
   if (!gameState.soundEnabled) {
     if (bgmHome) bgmHome.pause();
     if (bgmBattle) bgmBattle.pause();
+  } else {
+    // サウンドON切替時、戦闘中ならbattle BGMを直ちに再生
+    if (gameState.currentQuestion && !gameState.isProcessingAnswer) {
+      updateBgmState('battle');
+    }
   }
 }
 
@@ -4942,7 +4952,19 @@ function updateBgmState(screen) {
         try { bgmHome.pause(); bgmHome.currentTime = 0; } catch (e) {}
       }
       if (bgmBattle) {
-        bgmBattle.volume = 0.45;
+        bgmBattle.volume = 0.5;
+        bgmBattle.loop = true;
+        // ブラウザ差異を吸収し完全ループを保証するリスナー
+        if (!bgmBattle._hasLoopListener) {
+          bgmBattle.addEventListener('ended', function() {
+            try {
+              this.currentTime = 0;
+              const rep = this.play();
+              if (rep && typeof rep.catch === 'function') rep.catch(() => {});
+            } catch (err) {}
+          });
+          bgmBattle._hasLoopListener = true;
+        }
         const p = bgmBattle.play();
         if (p && typeof p.catch === 'function') p.catch(() => {});
       }
