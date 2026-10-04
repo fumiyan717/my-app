@@ -4782,6 +4782,13 @@ class VrmAvatarController {
     // アクション用タイマー
     this.actionState = null;
     this.actionTime = 0;
+
+    // 🐾 ネコマスコットの自然な腕モーション＆アイドル仕草用
+    this.idleGestureTimer = 0;
+    this.idleGestureInterval = 4.5 + Math.random() * 3.5;
+    this.currentGesture = null;
+    this.gestureProgress = 0;
+    this.gestureDuration = 2.0;
   }
 
   // アプリ起動時またはモデル切り替え時に事前ダウンロード＆パース
@@ -4922,15 +4929,15 @@ class VrmAvatarController {
       this.chestTexture = new THREE.CanvasTexture(this.chestCanvas);
       this.chestTexture.colorSpace = THREE.SRGBColorSpace;
 
-      const chestGeo = new THREE.PlaneGeometry(0.36, 0.34);
+      // ロボットの胸モニター位置（assets/robot.png の実ピクセル [294, 713, 497, 935] と完全同期）
+      const chestGeo = new THREE.PlaneGeometry(0.252, 0.274);
       const chestMat = new THREE.MeshBasicMaterial({
         map: this.chestTexture,
         transparent: true,
         side: THREE.DoubleSide
       });
       this.chestMesh = new THREE.Mesh(chestGeo, chestMat);
-      // ロボットの胸モニター位置（ローカル座標）
-      this.chestMesh.position.set(-0.04, 0.79, 0.02);
+      this.chestMesh.position.set(-0.181, 0.845, 0.02);
       this.robotGroup.add(this.chestMesh);
 
       // 初期胸モニター描画
@@ -4990,14 +4997,14 @@ class VrmAvatarController {
     // 背景（サイバーダーク＋薄いネオングロー）
     ctx.fillStyle = '#06101e';
     ctx.beginPath();
-    ctx.roundRect(4, 4, w - 8, h - 8, 12);
+    ctx.roundRect(6, 6, w - 12, h - 12, 10);
     ctx.fill();
 
     // 枠線
     ctx.strokeStyle = colorHex;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 3.5;
     ctx.shadowColor = colorHex;
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 8;
     ctx.stroke();
 
     // パターン描画
@@ -5232,6 +5239,14 @@ class VrmAvatarController {
       this.controls.minPolarAngle = Math.PI * 0.10;
       this.controls.update();
 
+      // クリックで愛らしくリアクション
+      this.renderer.domElement.addEventListener('dblclick', () => {
+        if (this.currentAvatarMode === 'vrm') {
+          this.triggerCuteGesture('beckon');
+          if (window.playSound) window.playSound('laser');
+        }
+      });
+
       // 5. Lights
       const ambLight = new THREE.AmbientLight(0xffffff, 1.3);
       this.scene.add(ambLight);
@@ -5348,13 +5363,26 @@ class VrmAvatarController {
     const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
     const leftLowerArm = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
     const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+    const leftHand = vrm.humanoid.getNormalizedBoneNode('leftHand');
+    const rightHand = vrm.humanoid.getNormalizedBoneNode('rightHand');
     const head = vrm.humanoid.getNormalizedBoneNode('head');
 
     if (leftUpperArm) leftUpperArm.rotation.set(0.12, 0.15, -1.1);
     if (rightUpperArm) rightUpperArm.rotation.set(0.12, -0.15, 1.1);
     if (leftLowerArm) leftLowerArm.rotation.set(0.25, 0.3, 0.1);
     if (rightLowerArm) rightLowerArm.rotation.set(0.25, -0.3, -0.1);
+    if (leftHand) leftHand.rotation.set(0.08, 0, 0.05);
+    if (rightHand) rightHand.rotation.set(0.08, 0, -0.05);
     if (head) head.rotation.set(-0.02, 0, 0.04);
+  }
+
+  // 🐾 可愛い仕草（招き猫・両手ちょこん・手振り）を意図的に起動
+  triggerCuteGesture(gestureName = null) {
+    if (this.currentAvatarMode !== 'vrm' || this.actionState) return;
+    const choices = ['beckon', 'bothPaws', 'pawStretch'];
+    this.currentGesture = gestureName || choices[Math.floor(Math.random() * choices.length)];
+    this.gestureProgress = 0;
+    this.gestureDuration = this.currentGesture === 'beckon' ? 2.2 : 1.8;
   }
 
   setExpression(exprName) {
@@ -5517,15 +5545,22 @@ class VrmAvatarController {
         this.blinkTimer = 0;
       }
 
-      // 2. 待機呼吸モーション
+      // 2. 待機呼吸モーション＆生き生きとした腕の動作・愛らしい仕草
       const head = vrm.humanoid?.getNormalizedBoneNode('head');
       const chest = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('spine');
       const leftUpperArm = vrm.humanoid?.getNormalizedBoneNode('leftUpperArm');
       const rightUpperArm = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm');
+      const leftLowerArm = vrm.humanoid?.getNormalizedBoneNode('leftLowerArm');
+      const rightLowerArm = vrm.humanoid?.getNormalizedBoneNode('rightLowerArm');
+      const leftHand = vrm.humanoid?.getNormalizedBoneNode('leftHand');
+      const rightHand = vrm.humanoid?.getNormalizedBoneNode('rightHand');
 
       if (!this.actionState) {
-        const breath = Math.sin(elapsed * 2.4) * 0.025;
-        if (chest) chest.rotation.x = breath * 0.6;
+        const breath = Math.sin(elapsed * 2.2);
+        const swayArm = Math.cos(elapsed * 1.5);
+        const pawBreath = Math.sin(elapsed * 2.2);
+
+        if (chest) chest.rotation.x = breath * 0.02;
         if (head) {
           head.rotation.x = -0.02 + Math.sin(elapsed * 1.8) * 0.02;
           head.rotation.y = Math.sin(elapsed * 1.0) * 0.05;
@@ -5534,6 +5569,73 @@ class VrmAvatarController {
         if (vrm.scene) {
           vrm.scene.position.y = Math.sin(elapsed * 2.0) * 0.008;
         }
+
+        // 基本の自然な呼吸スイング姿勢
+        let lUaRot = [0.12 + breath * 0.02, 0.15 + swayArm * 0.02, -1.10 - breath * 0.035];
+        let rUaRot = [0.12 + breath * 0.02, -0.15 - swayArm * 0.02, 1.10 + breath * 0.035];
+        let lLaRot = [0.25 + pawBreath * 0.04, 0.30, 0.10 + swayArm * 0.03];
+        let rLaRot = [0.25 + pawBreath * 0.04, -0.30, -0.10 - swayArm * 0.03];
+        let lHandRot = [0.08 + pawBreath * 0.03, 0, 0.05];
+        let rHandRot = [0.08 + pawBreath * 0.03, 0, -0.05];
+
+        // 周期的な愛らしいネコ仕草（招き猫・両手ちょこん・手振り）
+        this.idleGestureTimer += delta;
+        if (!this.currentGesture && this.idleGestureTimer > this.idleGestureInterval) {
+          this.idleGestureTimer = 0;
+          this.idleGestureInterval = 5.0 + Math.random() * 4.0;
+          const gestures = ['beckon', 'bothPaws', 'pawStretch'];
+          this.currentGesture = gestures[Math.floor(Math.random() * gestures.length)];
+          this.gestureProgress = 0;
+          this.gestureDuration = this.currentGesture === 'beckon' ? 2.4 : 1.9;
+        }
+
+        if (this.currentGesture) {
+          this.gestureProgress += delta;
+          const p = this.gestureProgress / this.gestureDuration;
+          if (p >= 1.0) {
+            this.currentGesture = null;
+          } else {
+            // 滑らかなサインエンベロープ (0 -> 1 -> 0)
+            const env = Math.sin(p * Math.PI);
+
+            if (this.currentGesture === 'beckon') {
+              // 🐾 招き猫アクション：右前足をあげて手首をちょこちょこと招く
+              const beckonWave = Math.sin(this.gestureProgress * 12.0) * 0.18;
+              rUaRot[0] += env * 0.35;
+              rUaRot[2] -= env * 0.45;
+              rLaRot[0] += env * (0.75 + beckonWave);
+              rLaRot[1] += env * 0.20;
+              rHandRot[0] += env * (0.35 + beckonWave * 1.2);
+              if (head) {
+                head.rotation.z += env * -0.09;
+              }
+            } else if (this.currentGesture === 'bothPaws') {
+              // 🐾 両手胸元ちょこんポーズ：両腕を前胸にあげて可愛く小さく揺らす
+              const pawWave = Math.sin(this.gestureProgress * 8.0) * 0.08;
+              lUaRot[0] += env * 0.25;
+              lUaRot[2] += env * 0.30;
+              rUaRot[0] += env * 0.25;
+              rUaRot[2] -= env * 0.30;
+              lLaRot[0] += env * (0.55 + pawWave);
+              rLaRot[0] += env * (0.55 + pawWave);
+              lHandRot[0] += env * 0.28;
+              rHandRot[0] += env * 0.28;
+            } else if (this.currentGesture === 'pawStretch') {
+              // 🐾 片手リラックスストレッチ＆ごあいさつ
+              const wave = Math.sin(this.gestureProgress * 7.0) * 0.12;
+              lUaRot[2] += env * 0.35;
+              lLaRot[0] += env * (0.45 + wave);
+              lHandRot[2] += env * wave * 1.5;
+            }
+          }
+        }
+
+        if (leftUpperArm) leftUpperArm.rotation.set(...lUaRot);
+        if (rightUpperArm) rightUpperArm.rotation.set(...rUaRot);
+        if (leftLowerArm) leftLowerArm.rotation.set(...lLaRot);
+        if (rightLowerArm) rightLowerArm.rotation.set(...rLaRot);
+        if (leftHand) leftHand.rotation.set(...lHandRot);
+        if (rightHand) rightHand.rotation.set(...rHandRot);
       } else if (this.actionState === 'meow') {
         // 🐾 「ニャー！」アクション
         this.actionTime += delta;
@@ -8878,6 +8980,7 @@ function selectCatCostume(cat, id) {
   renderCatCostumeGrid();
   if (window.VrmAvatarManager) {
     window.VrmAvatarManager.applyCatCostume(gameState.costume);
+    window.VrmAvatarManager.triggerCuteGesture('bothPaws');
   }
   updatePilotDisplay();
   if (window.playSound) playSound('click');

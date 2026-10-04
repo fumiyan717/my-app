@@ -287,82 +287,58 @@ export class VrmCostumeManager {
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.95, roughness: 0.15 });
     const redMat = new THREE.MeshStandardMaterial({ color: 0xb51c1c, roughness: 0.5 });
 
-    // === 兜 (Kabuto Helmet) on Head ===
+    // === 兜冠・黄金鍬形の前立 (Samurai Kuwagata Crest Crown on Head) ===
+    // ※ ネコ本来の愛らしい耳や表情を隠さない、マスコット専用の英雄甲冑冠
     if (head) {
-      const helmetGroup = new THREE.Group();
-      helmetGroup.userData.isCostumeItem = true;
+      const crownGroup = new THREE.Group();
+      crownGroup.userData.isCostumeItem = true;
 
-      // 鉢 (Hachi - 兜の球状頭頂部)
-      const hachi = new THREE.Mesh(
-        new THREE.SphereGeometry(0.125, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.52),
+      // 額の黒漆鉢巻き・前板 (Black Lacquer Forehead Band)
+      const band = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.125, 0.13, 0.024, 24, 1, true, Math.PI * 0.22, Math.PI * 0.56),
         ironMat
       );
-      hachi.position.set(0, 0.08, 0.01);
-      hachi.rotation.x = -0.05;
-      helmetGroup.add(hachi);
+      band.position.set(0, 0.07, 0.02);
+      band.rotation.x = -0.15;
+      crownGroup.add(band);
 
-      // 八幡座 (Tehen - 頭頂の黄金環)
-      const tehen = new THREE.Mesh(new THREE.TorusGeometry(0.018, 0.006, 8, 16), goldMat);
-      tehen.rotation.x = Math.PI / 2;
-      tehen.position.set(0, 0.205, 0.005);
-      helmetGroup.add(tehen);
+      // 前立て座 (Maedate Base - 黄金菊座)
+      const crestBase = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.008, 16), goldMat);
+      crestBase.rotation.x = Math.PI / 2;
+      crestBase.position.set(0, 0.09, 0.135);
+      crownGroup.add(crestBase);
 
-      // 眉庇 (Mabizashi - 漆塗りの額バイザー)
-      const visor = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.13, 0.138, 0.016, 16, 1, false, Math.PI * 0.22, Math.PI * 0.56),
-        ironMat
-      );
-      visor.position.set(0, 0.08, 0.02);
-      visor.rotation.x = -0.28;
-      helmetGroup.add(visor);
+      // 黄金の大鍬形・左角 (Golden Kuwagata Horn - Left)
+      const lHorn = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.17, 8), goldMat);
+      lHorn.position.set(-0.055, 0.17, 0.13);
+      lHorn.rotation.z = -0.52;
+      lHorn.rotation.x = -0.18;
+      crownGroup.add(lHorn);
 
-      // 前立て (Maedate - 黄金の大鍬形)
-      const crestMed = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.006, 16), goldMat);
-      crestMed.rotation.x = Math.PI / 2;
-      crestMed.position.set(0, 0.12, 0.13);
-      helmetGroup.add(crestMed);
+      // 黄金の大鍬形・右角 (Golden Kuwagata Horn - Right)
+      const rHorn = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.17, 8), goldMat);
+      rHorn.position.set(0.055, 0.17, 0.13);
+      rHorn.rotation.z = 0.52;
+      rHorn.rotation.x = -0.18;
+      crownGroup.add(rHorn);
 
-      // 左鍬形 (Left Horn)
-      const lHorn = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.18, 8), goldMat);
-      lHorn.position.set(-0.065, 0.19, 0.13);
-      lHorn.rotation.z = -0.58;
-      lHorn.rotation.x = -0.22;
-      helmetGroup.add(lHorn);
+      // 中央の武将金紋 (Center Gold Crest Emblem)
+      const emblem = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.075, 0.006), goldMat);
+      emblem.position.set(0, 0.145, 0.135);
+      crownGroup.add(emblem);
 
-      // 右鍬形 (Right Horn)
-      const rHorn = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.18, 8), goldMat);
-      rHorn.position.set(0.065, 0.19, 0.13);
-      rHorn.rotation.z = 0.58;
-      rHorn.rotation.x = -0.22;
-      helmetGroup.add(rHorn);
+      // 後ろ結び目の朱色紐 (Crimson Tie Ribbons at Back)
+      const tie1 = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.11, 0.004), redMat);
+      tie1.position.set(-0.02, 0.01, -0.125);
+      tie1.rotation.z = 0.25;
+      crownGroup.add(tie1);
 
-      // 中央の黄金羽飾り
-      const feather = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.09, 0.005), goldMat);
-      feather.position.set(0, 0.17, 0.132);
-      helmetGroup.add(feather);
+      const tie2 = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.11, 0.004), redMat);
+      tie2.position.set(0.02, 0.01, -0.125);
+      tie2.rotation.z = -0.25;
+      crownGroup.add(tie2);
 
-      // 錣 (Shikoro - 首周りの多段式鉄板しころ)
-      [0, 1, 2].forEach(i => {
-        const r1 = 0.142 + i * 0.014;
-        const r2 = r1 + 0.012;
-        const shikoroTier = new THREE.Mesh(
-          new THREE.CylinderGeometry(r1, r2, 0.02, 16, 1, true, Math.PI * 0.88, Math.PI * 1.24),
-          i === 1 ? redMat : ironMat
-        );
-        shikoroTier.position.set(0, 0.06 - i * 0.022, -0.01);
-        helmetGroup.add(shikoroTier);
-      });
-
-      // 面頬 (Mempo - 戦国武将の鉄仮面)
-      const mempo = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.082, 0.072, 0.075, 16, 1, true, Math.PI * 0.22, Math.PI * 0.56),
-        ironMat
-      );
-      mempo.position.set(0, 0.01, 0.065);
-      mempo.rotation.x = 0.1;
-      helmetGroup.add(mempo);
-
-      head.add(helmetGroup);
+      head.add(crownGroup);
     }
 
     // === 背負い名刀・大太刀 (Great Katana on Chest) ===
@@ -371,34 +347,34 @@ export class VrmCostumeManager {
       katanaGroup.userData.isCostumeItem = true;
 
       // 鞘 (Saya)
-      const saya = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.014, 0.95, 12), ironMat);
+      const saya = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.013, 0.90, 12), ironMat);
       katanaGroup.add(saya);
 
       // 鐺 (Kojiri) 金具
-      const kojiri = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.015, 0.05, 12), goldMat);
-      kojiri.position.y = -0.45;
+      const kojiri = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.014, 0.045, 12), goldMat);
+      kojiri.position.y = -0.43;
       katanaGroup.add(kojiri);
 
       // 鍔 (Tsuba)
-      const tsuba = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.008, 16), goldMat);
-      tsuba.position.y = 0.475;
+      const tsuba = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.008, 16), goldMat);
+      tsuba.position.y = 0.45;
       katanaGroup.add(tsuba);
 
       // 柄 (Tsuka)
       const tsuka = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.014, 0.014, 0.24, 10),
+        new THREE.CylinderGeometry(0.013, 0.013, 0.22, 10),
         new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.7 })
       );
-      tsuka.position.y = 0.60;
+      tsuka.position.y = 0.57;
       katanaGroup.add(tsuka);
 
       // 頭 (Kashira) 金具
-      const kashira = new THREE.Mesh(new THREE.SphereGeometry(0.016, 10, 10), goldMat);
-      kashira.position.y = 0.72;
+      const kashira = new THREE.Mesh(new THREE.SphereGeometry(0.015, 10, 10), goldMat);
+      kashira.position.y = 0.68;
       katanaGroup.add(kashira);
 
-      katanaGroup.position.set(-0.11, 0.14, -0.17);
-      katanaGroup.rotation.set(0.18, 0.12, 0.65);
+      katanaGroup.position.set(-0.10, 0.12, -0.16);
+      katanaGroup.rotation.set(0.16, 0.10, 0.62);
       chest.add(katanaGroup);
     }
 
@@ -407,39 +383,39 @@ export class VrmCostumeManager {
       const waistKatana = new THREE.Group();
       waistKatana.userData.isCostumeItem = true;
 
-      const wSaya = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.011, 0.52, 10), ironMat);
+      const wSaya = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.010, 0.48, 10), ironMat);
       waistKatana.add(wSaya);
 
-      const wTsuba = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.007, 12), goldMat);
-      wTsuba.position.y = 0.26;
+      const wTsuba = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.006, 12), goldMat);
+      wTsuba.position.y = 0.24;
       waistKatana.add(wTsuba);
 
       const wTsuka = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.012, 0.012, 0.16, 10),
+        new THREE.CylinderGeometry(0.011, 0.011, 0.15, 10),
         new THREE.MeshStandardMaterial({ color: 0x181820, roughness: 0.7 })
       );
-      wTsuka.position.y = 0.35;
+      wTsuka.position.y = 0.32;
       waistKatana.add(wTsuka);
 
-      waistKatana.position.set(-0.17, 0.06, 0.03);
+      waistKatana.position.set(-0.16, 0.05, 0.03);
       waistKatana.rotation.set(0.12, 0.18, -0.22);
       hips.add(waistKatana);
     }
 
-    // === 大袖 (Sode Shoulder Armor on Arms) ===
+    // === 大袖 (Sode Shoulder Armor on Arms - 自然なスケール) ===
     [ { arm: lArm, sign: 1 }, { arm: rArm, sign: -1 } ].forEach(({ arm, sign }) => {
       if (arm) {
         const sodeGroup = new THREE.Group();
         sodeGroup.userData.isCostumeItem = true;
-        [0, 1, 2].forEach(i => {
+        [0, 1].forEach(i => {
           const plate = new THREE.Mesh(
-            new THREE.BoxGeometry(0.13, 0.034, 0.11),
-            i === 1 ? redMat : ironMat
+            new THREE.BoxGeometry(0.09, 0.024, 0.08),
+            i === 0 ? ironMat : redMat
           );
-          plate.position.set(0, -i * 0.032, 0);
+          plate.position.set(0, -i * 0.022, 0);
           sodeGroup.add(plate);
         });
-        sodeGroup.position.set(sign * 0.07, 0.02, 0);
+        sodeGroup.position.set(sign * 0.055, 0.01, 0);
         arm.add(sodeGroup);
       }
     });
@@ -627,25 +603,58 @@ export class VrmCostumeManager {
     const navyMat = new THREE.MeshStandardMaterial({ color: 0x162238, roughness: 0.7 });
     const steelMat = new THREE.MeshStandardMaterial({ color: 0x889098, metalness: 0.9, roughness: 0.25 });
 
-    // === 忍び頭巾・覆面 on Head ===
+    // === 忍び額当て (Shinobi Hitai-ate Forehead Protector on Head) ===
+    // ※ ネコ本来の愛らしい顔・口元を覆わず、額に凛々しく装着
     if (head) {
       const ninjaHead = new THREE.Group();
       ninjaHead.userData.isCostumeItem = true;
 
-      // 下顎・口元を覆う忍び覆面
-      const mask = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.085, 0.075, 0.075, 16, 1, true, Math.PI * 0.2, Math.PI * 0.6),
+      // 額当て紺布バンド (Navy Cloth Headband)
+      const cowlBand = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.124, 0.128, 0.022, 24, 1, true, Math.PI * 0.22, Math.PI * 0.56),
         navyMat
       );
-      mask.position.set(0, 0.015, 0.065);
-      mask.rotation.x = 0.1;
-      ninjaHead.add(mask);
-
-      // 額の黒頭巾バンド
-      const cowlBand = new THREE.Mesh(new THREE.TorusGeometry(0.126, 0.016, 8, 32), navyMat);
-      cowlBand.rotation.x = Math.PI / 2;
-      cowlBand.position.set(0, 0.085, 0.01);
+      cowlBand.position.set(0, 0.07, 0.02);
+      cowlBand.rotation.x = -0.15;
       ninjaHead.add(cowlBand);
+
+      // 忍び金属プレート (Steel Hitai-ate Plate)
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.032, 0.006), steelMat);
+      plate.position.set(0, 0.075, 0.136);
+      ninjaHead.add(plate);
+
+      // 「忍」字 キャンバステクスチャ紋
+      const nCanvas = document.createElement('canvas');
+      nCanvas.width = 128;
+      nCanvas.height = 128;
+      const nCtx = nCanvas.getContext('2d');
+      nCtx.fillStyle = '#889098';
+      nCtx.fillRect(0, 0, 128, 128);
+      nCtx.fillStyle = '#c02020';
+      nCtx.font = 'bold 88px sans-serif';
+      nCtx.textAlign = 'center';
+      nCtx.textBaseline = 'middle';
+      nCtx.fillText('忍', 64, 64);
+
+      const nTex = new THREE.CanvasTexture(nCanvas);
+      nTex.colorSpace = THREE.SRGBColorSpace;
+      const nBadge = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.045, 0.026),
+        new THREE.MeshBasicMaterial({ map: nTex, side: THREE.DoubleSide })
+      );
+      nBadge.position.set(0, 0.075, 0.140);
+      ninjaHead.add(nBadge);
+
+      // 後ろに結ばれた忍びリボン (Trailing Tie Ribbons)
+      const nRibbon1 = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.14, 0.004), navyMat);
+      nRibbon1.position.set(-0.02, 0.01, -0.125);
+      nRibbon1.rotation.z = 0.22;
+      ninjaHead.add(nRibbon1);
+
+      const nRibbon2 = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.14, 0.004), navyMat);
+      nRibbon2.position.set(0.02, 0.01, -0.125);
+      nRibbon2.rotation.z = -0.22;
+      ninjaHead.add(nRibbon2);
 
       head.add(ninjaHead);
     }
@@ -789,7 +798,7 @@ export class VrmCostumeManager {
     }
   }
 
-  // 🐟 5. さかなパーカー (Fish Hoodie 3D)
+  // 🐟 5. さかなパーカー (Fish Hoodie 3D - 自然なドレープ＆コード)
   buildHoodie3D(chest) {
     const THREE = this.THREE;
     if (!chest) return;
@@ -797,30 +806,30 @@ export class VrmCostumeManager {
     const hoodieGroup = new THREE.Group();
     hoodieGroup.userData.isCostumeItem = true;
 
-    // 背中に落ちた3Dフード (Dropped Hoodie Hood)
-    const hoodMat = new THREE.MeshStandardMaterial({ color: 0x111c33, roughness: 0.75 });
+    // 背中に自然に落ちた3Dフード (Natural Dropped Hoodie Hood)
+    const hoodMat = new THREE.MeshStandardMaterial({ color: 0x141f36, roughness: 0.8 });
     const hood = new THREE.Mesh(
-      new THREE.SphereGeometry(0.14, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.45),
+      new THREE.SphereGeometry(0.095, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.45),
       hoodMat
     );
     hood.rotation.x = Math.PI * 0.95;
-    hood.position.set(0, 0.16, -0.13);
-    hood.scale.set(1.15, 0.75, 0.95);
+    hood.position.set(0, 0.11, -0.115);
+    hood.scale.set(1.05, 0.65, 0.85);
     hoodieGroup.add(hood);
 
-    // 胸元から垂れる白コード紐 (Braided Drawstrings)
-    const cordMat = new THREE.MeshStandardMaterial({ color: 0xf5f5fa, roughness: 0.5 });
-    const agletMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.2 });
+    // 胸元から垂れる白コード紐 (Natural Drawstrings)
+    const cordMat = new THREE.MeshStandardMaterial({ color: 0xf5f5fa, roughness: 0.4 });
+    const agletMat = new THREE.MeshStandardMaterial({ color: 0xdcdce2, metalness: 0.9, roughness: 0.15 });
 
-    [-0.035, 0.035].forEach(x => {
+    [-0.032, 0.032].forEach(x => {
       // 紐本体
-      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.22, 8), cordMat);
-      cord.position.set(x, 0.04, 0.145);
+      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.20, 8), cordMat);
+      cord.position.set(x, 0.03, 0.138);
       hoodieGroup.add(cord);
 
       // 金属アグレット先端
-      const aglet = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.025, 8), agletMat);
-      aglet.position.set(x, -0.075, 0.145);
+      const aglet = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.022, 8), agletMat);
+      aglet.position.set(x, -0.075, 0.138);
       hoodieGroup.add(aglet);
     });
 
@@ -837,25 +846,25 @@ export class VrmCostumeManager {
     const hakamaMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.65 });
 
     // 前紐の結び目 (Front Knot)
-    const knot = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.035, 0.025), hakamaMat);
-    knot.position.set(0, 0.06, 0.145);
+    const knot = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.030, 0.018), hakamaMat);
+    knot.position.set(0, 0.055, 0.142);
     hakamaGroup.add(knot);
 
     // 垂れる紐端 (Ribbon Tails)
-    const tailL = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.22, 0.008), hakamaMat);
-    tailL.position.set(-0.025, -0.05, 0.148);
-    tailL.rotation.z = 0.08;
+    const tailL = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.19, 0.006), hakamaMat);
+    tailL.position.set(-0.022, -0.045, 0.145);
+    tailL.rotation.z = 0.07;
     hakamaGroup.add(tailL);
 
-    const tailR = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.20, 0.008), hakamaMat);
-    tailR.position.set(0.025, -0.04, 0.148);
-    tailR.rotation.z = -0.08;
+    const tailR = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.17, 0.006), hakamaMat);
+    tailR.position.set(0.022, -0.035, 0.145);
+    tailR.rotation.z = -0.07;
     hakamaGroup.add(tailR);
 
     hips.add(hakamaGroup);
   }
 
-  // 👕 8. 黒Tシャツ (Black T-shirt 3D Chain)
+  // 👕 8. 黒Tシャツ (Black T-shirt 3D Chain & Pendant)
   buildBlackT3D(chest) {
     const THREE = this.THREE;
     if (!chest) return;
@@ -863,12 +872,17 @@ export class VrmCostumeManager {
     const chainGroup = new THREE.Group();
     chainGroup.userData.isCostumeItem = true;
 
-    // 首元のシルバージュエリーチェーン
-    const chainMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.95, roughness: 0.15 });
-    const chain = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.005, 8, 24), chainMat);
-    chain.rotation.x = Math.PI * 0.45;
-    chain.position.set(0, 0.14, 0.08);
+    // 首元のシルバージュエリーチェーン (Silver Curb Chain)
+    const chainMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.95, roughness: 0.12 });
+    const chain = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.004, 8, 24), chainMat);
+    chain.rotation.x = Math.PI * 0.44;
+    chain.position.set(0, 0.11, 0.092);
     chainGroup.add(chain);
+
+    // 魚モチーフのシルバーチャームペンダント (Fish Charm Pendant)
+    const pendant = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.024, 0.004), chainMat);
+    pendant.position.set(0, 0.036, 0.118);
+    chainGroup.add(pendant);
 
     chest.add(chainGroup);
   }
