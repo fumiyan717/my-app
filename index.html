@@ -3375,6 +3375,7 @@
       "three": "./assets/libs/three.module.min.js",
       "three/addons/controls/OrbitControls.js": "./assets/libs/OrbitControls.js",
       "three/addons/loaders/GLTFLoader.js": "./assets/libs/GLTFLoader.js",
+      "three/addons/utils/BufferGeometryUtils.js": "./assets/utils/BufferGeometryUtils.js",
       "@pixiv/three-vrm": "./assets/libs/three-vrm.module.min.js"
     }
   }
@@ -4221,12 +4222,15 @@
               <div id="vrm-avatar-panel" style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- 3D ビューポート（全身が美しく収まる320px） -->
                 <div id="vrm-viewer-container" style="position: relative; width: 100%; height: 320px; min-height: 300px; background: radial-gradient(circle at 50% 50%, rgba(13, 30, 60, 0.9) 0%, rgba(5, 12, 25, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.18);">
-                  <div id="vrm-loading-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(10, 25, 50, 0.95) 0%, rgba(5, 12, 25, 0.98) 100%); z-index: 10; pointer-events: none; transition: opacity 0.3s ease;">
+                  <div id="vrm-loading-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(10, 25, 50, 0.95) 0%, rgba(5, 12, 25, 0.98) 100%); z-index: 10; transition: opacity 0.3s ease;">
                     <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
                       <img src="assets/dog-mascot-icon.png" style="width: 76px; height: 76px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.6)); animation: bounceDog 1.2s infinite alternate;" alt="dog-mascot">
                     </div>
-                    <div id="vrm-loading-text" style="font-size: 13px; color: #00e5ff; font-weight: bold; margin-top: 8px;">🐶 3D ドッグ・マスコット 準備中...</div>
-                    <div id="vrm-loading-progress" style="font-size: 11px; color: #ffd700; margin-top: 3px; font-weight: bold;"></div>
+                    <div id="vrm-loading-text" style="font-size: 13px; color: #00e5ff; font-weight: bold; margin-top: 8px;">🐶 3D ドッグ・マスコット 読込中...</div>
+                    <div style="width: 180px; height: 6px; background: rgba(255,255,255,0.12); border-radius: 3px; margin-top: 7px; overflow: hidden; border: 1px solid rgba(0,229,255,0.3);">
+                      <div id="vrm-loading-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00e5ff, #ffd700); transition: width 0.2s ease;"></div>
+                    </div>
+                    <div id="vrm-loading-progress" style="font-size: 11px; color: #ffd700; margin-top: 5px; font-weight: bold;"></div>
                   </div>
                   <!-- 操作ヒント -->
                   <div style="position: absolute; top: 8px; right: 10px; background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 6px; font-size: 10px; color: #8cb0d0; pointer-events: none; border: 1px solid rgba(255,255,255,0.1); z-index: 5;">
@@ -4491,7 +4495,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { VRMLoaderPlugin } from '@pixiv/three-vrm';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
 class VrmAvatarController {
   constructor() {
@@ -4537,42 +4541,99 @@ class VrmAvatarController {
         if (!vrm) {
           console.error('VRM data not found in gltf');
           this.isPreloading = false;
+          this.showLoadingError('VRMデータの展開に失敗しました');
           return;
         }
+
+        // VRM 1.0 最適化
+        try {
+          if (VRMUtils && typeof VRMUtils.removeUnnecessaryVertices === 'function') {
+            VRMUtils.removeUnnecessaryVertices(gltf.scene);
+          }
+          if (VRMUtils && typeof VRMUtils.removeUnnecessaryJoints === 'function') {
+            VRMUtils.removeUnnecessaryJoints(gltf.scene);
+          }
+        } catch (optErr) {
+          console.warn('VRM optimization warning:', optErr);
+        }
+
+        // メッシュのカメラ外判定による非表示バグを防止
+        vrm.scene.traverse((obj) => {
+          if (obj.isMesh) {
+            obj.frustumCulled = false;
+            obj.castShadow = true;
+            obj.receiveShadow = true;
+          }
+        });
 
         this.preloadedVrm = vrm;
         this.isLoaded = true;
         this.isPreloading = false;
         this.loadProgressPercent = 100;
+        this.updateOverlayProgress(100, '14.6', '14.6');
 
         // 自然なアイドル立ちポーズの初期化
         this.applyNaturalPose(vrm);
         this.setExpression(window.gameState?.vrmExpression || 'happy');
 
         // もし既にコンテナが初期化されて待機中なら即座にシーンにアタッチ
-        if (this.scene && !this.currentVrm) {
+        if (this.scene) {
           this.attachVrmToScene(vrm);
         }
       },
       (progress) => {
+        let loadedMb = 0;
+        let totalMb = 14.6;
+        let percent = 0;
+
         if (progress.total && progress.total > 0) {
-          this.loadProgressPercent = Math.min(99, Math.round((progress.loaded / progress.total) * 100));
-        } else {
-          const estimatedTotal = 14500000;
-          this.loadProgressPercent = Math.min(95, Math.round((progress.loaded / estimatedTotal) * 100));
+          loadedMb = (progress.loaded / (1024 * 1024)).toFixed(1);
+          totalMb = (progress.total / (1024 * 1024)).toFixed(1);
+          percent = Math.min(99, Math.round((progress.loaded / progress.total) * 100));
+        } else if (progress.loaded) {
+          loadedMb = (progress.loaded / (1024 * 1024)).toFixed(1);
+          percent = Math.min(98, Math.round((progress.loaded / 14582844) * 100));
         }
-        this.updateOverlayProgress(this.loadProgressPercent);
+
+        this.loadProgressPercent = percent;
+        this.updateOverlayProgress(percent, loadedMb, totalMb);
       },
       (error) => {
         console.error('VRM load error:', error);
         this.isPreloading = false;
-        const text = document.getElementById('vrm-loading-text');
-        if (text) {
-          text.innerHTML = '⚠️ 3Dモデル読込に失敗しました';
-          text.style.color = '#ff6688';
-        }
+        this.showLoadingError(error?.message || '3Dモデル読込に失敗しました');
       }
     );
+  }
+
+  showLoadingError(msg) {
+    const text = document.getElementById('vrm-loading-text');
+    const pEl = document.getElementById('vrm-loading-progress');
+    const overlay = document.getElementById('vrm-loading-overlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '1';
+    }
+    if (text) {
+      text.innerHTML = `⚠️ 3Dモデル読込失敗<br><span style="font-size:10px; color:#ff88aa; font-weight:normal;">${msg}</span>`;
+      text.style.color = '#ff6688';
+    }
+    if (pEl) {
+      pEl.innerHTML = `<button onclick="window.VrmAvatarManager?.retry()" style="margin-top:6px; padding:4px 12px; font-size:11px; background:#00e5ff; color:#000; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">再試行</button>`;
+    }
+  }
+
+  retry() {
+    this.isPreloading = false;
+    this.isLoaded = false;
+    const text = document.getElementById('vrm-loading-text');
+    const pEl = document.getElementById('vrm-loading-progress');
+    if (text) {
+      text.textContent = '🐶 3D ドッグ・マスコット 読込中...';
+      text.style.color = '#00e5ff';
+    }
+    if (pEl) pEl.textContent = '';
+    this.preload();
   }
 
   init(containerId = 'vrm-viewer-container') {
@@ -4581,8 +4642,8 @@ class VrmAvatarController {
 
     if (!this.isInitialized) {
       const rect = this.container.getBoundingClientRect();
-      const width = rect.width > 50 ? rect.width : 340;
-      const height = rect.height > 50 ? rect.height : 320;
+      const width = (rect.width > 50) ? rect.width : (this.container.clientWidth > 50 ? this.container.clientWidth : 340);
+      const height = (rect.height > 50) ? rect.height : (this.container.clientHeight > 50 ? this.container.clientHeight : 320);
 
       // 1. Scene
       this.scene = new THREE.Scene();
@@ -4669,6 +4730,16 @@ class VrmAvatarController {
       this.scene.remove(this.currentVrm.scene);
     }
     this.currentVrm = vrm;
+
+    // メッシュのカメラ外判定による非表示バグを防止
+    vrm.scene.traverse((obj) => {
+      if (obj.isMesh) {
+        obj.frustumCulled = false;
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+    });
+
     this.scene.add(vrm.scene);
 
     // 自然なポーズと表情を再適用
@@ -4679,14 +4750,29 @@ class VrmAvatarController {
     const overlay = document.getElementById('vrm-loading-overlay');
     if (overlay) {
       overlay.style.opacity = '0';
-      setTimeout(() => { overlay.style.display = 'none'; }, 200);
+      setTimeout(() => { overlay.style.display = 'none'; }, 250);
     }
+
+    this.start();
   }
 
-  updateOverlayProgress(percent) {
+  updateOverlayProgress(percent, loadedMb, totalMb) {
+    const textEl = document.getElementById('vrm-loading-text');
     const pEl = document.getElementById('vrm-loading-progress');
-    if (pEl && percent > 0) {
-      pEl.textContent = `読込中 ${percent}%`;
+    const barEl = document.getElementById('vrm-loading-bar');
+
+    if (barEl) {
+      barEl.style.width = `${percent}%`;
+    }
+    if (pEl) {
+      if (loadedMb && totalMb) {
+        pEl.textContent = `読込中: ${loadedMb} MB / ${totalMb} MB (${percent}%)`;
+      } else if (percent > 0) {
+        pEl.textContent = `読込中 ${percent}%`;
+      }
+    }
+    if (textEl && percent > 0 && percent < 100) {
+      textEl.textContent = '🐶 3D ドッグ・マスコット 読込中...';
     }
   }
 
@@ -4864,6 +4950,7 @@ class VrmAvatarController {
 }
 
 window.VrmAvatarManager = new VrmAvatarController();
+window.dispatchEvent(new CustomEvent('vrm-manager-ready'));
 
 // 🚀 バックグラウンド事前ロード（Preload）の自動開始
 const triggerPreload = () => {
@@ -7886,14 +7973,23 @@ function initAvatarSettingsUI() {
   selectAvatarType('vrm');
   setAvatarExpression(gameState.vrmExpression || 'happy');
   
-  // モーダルオープン時のコンテナ描画確定に合わせた多段階リサイズ
-  requestAnimationFrame(() => {
+  const setupVrmViewer = () => {
     if (window.VrmAvatarManager) {
       window.VrmAvatarManager.init('vrm-viewer-container');
       window.VrmAvatarManager.resize();
       window.VrmAvatarManager.start();
     }
-  });
+  };
+
+  // モーダルオープン時のコンテナ描画確定に合わせた多段階リサイズ
+  if (window.VrmAvatarManager) {
+    requestAnimationFrame(setupVrmViewer);
+  } else {
+    window.addEventListener('vrm-manager-ready', () => {
+      requestAnimationFrame(setupVrmViewer);
+    }, { once: true });
+  }
+
   setTimeout(() => {
     if (window.VrmAvatarManager) window.VrmAvatarManager.resize();
   }, 60);
