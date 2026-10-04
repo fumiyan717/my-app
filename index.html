@@ -3372,10 +3372,10 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "./assets/libs/three.module.js",
-      "three/addons/controls/OrbitControls.js": "./assets/libs/OrbitControls.js",
-      "three/addons/loaders/GLTFLoader.js": "./assets/libs/GLTFLoader.js",
-      "@pixiv/three-vrm": "./assets/libs/three-vrm.module.js"
+      "three": "./assets/libs/three.module.min.js",
+      "three/addons/controls/OrbitControls.js": "./assets/libs/OrbitControls.min.js",
+      "three/addons/loaders/GLTFLoader.js": "./assets/libs/GLTFLoader.min.js",
+      "@pixiv/three-vrm": "./assets/libs/three-vrm.module.min.js"
     }
   }
   </script>
@@ -4221,10 +4221,12 @@
               <div id="vrm-avatar-panel" style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- 3D ビューポート -->
                 <div id="vrm-viewer-container" style="position: relative; width: 100%; height: 280px; background: radial-gradient(circle at 50% 50%, rgba(13, 30, 60, 0.9) 0%, rgba(5, 12, 25, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.15);">
-                  <div id="vrm-loading-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(5, 12, 25, 0.85); z-index: 10; pointer-events: none; transition: opacity 0.4s ease;">
-                    <div style="font-size: 36px; animation: bounceDog 1s infinite alternate;">🐶</div>
-                    <div style="font-size: 13px; color: #00e5ff; font-weight: bold; margin-top: 6px;">3D ドッグ・マスコット 起動中...</div>
-                    <div style="font-size: 11px; color: #8cb0d0; margin-top: 2px;">dog-mascot.vrm をロードしています</div>
+                  <div id="vrm-loading-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(10, 25, 50, 0.95) 0%, rgba(5, 12, 25, 0.98) 100%); z-index: 10; pointer-events: none; transition: opacity 0.3s ease;">
+                    <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
+                      <img src="assets/dog-mascot-icon.png" style="width: 76px; height: 76px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.6)); animation: bounceDog 1.2s infinite alternate;" alt="dog-mascot">
+                    </div>
+                    <div id="vrm-loading-text" style="font-size: 13px; color: #00e5ff; font-weight: bold; margin-top: 8px;">🐶 3D ドッグ・マスコット 準備中...</div>
+                    <div id="vrm-loading-progress" style="font-size: 11px; color: #ffd700; margin-top: 3px; font-weight: bold;"></div>
                   </div>
                   <!-- 操作ヒント -->
                   <div style="position: absolute; top: 8px; right: 10px; background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 6px; font-size: 10px; color: #8cb0d0; pointer-events: none; border: 1px solid rgba(255,255,255,0.1); z-index: 5;">
@@ -4502,7 +4504,13 @@ class VrmAvatarController {
     this.clock = new THREE.Clock();
     this.animationFrameId = null;
     this.isInitialized = false;
-    this.isLoading = false;
+    
+    // プリロード＆ローディング状態管理
+    this.isPreloading = false;
+    this.isLoaded = false;
+    this.preloadedVrm = null;
+    this.loadProgressPercent = 0;
+    this.modelUrl = 'assets/dog-mascot.vrm';
     this.currentExpression = 'happy';
     
     // 自動まばたき
@@ -4514,66 +4522,158 @@ class VrmAvatarController {
     this.actionTime = 0;
   }
 
+  // アプリ起動時にバックグラウンドで事前ダウンロード＆パース
+  preload(url = this.modelUrl) {
+    if (this.isPreloading || this.isLoaded) return;
+    this.isPreloading = true;
+
+    const loader = new GLTFLoader();
+    loader.register((parser) => new VRMLoaderPlugin(parser));
+
+    loader.load(
+      url,
+      (gltf) => {
+        const vrm = gltf.userData.vrm;
+        if (!vrm) {
+          console.error('VRM data not found in gltf');
+          this.isPreloading = false;
+          return;
+        }
+
+        this.preloadedVrm = vrm;
+        this.isLoaded = true;
+        this.isPreloading = false;
+        this.loadProgressPercent = 100;
+
+        // 自然なアイドル立ちポーズの初期化
+        this.applyNaturalPose(vrm);
+        this.setExpression(window.gameState?.vrmExpression || 'happy');
+
+        // もし既にコンテナが初期化されて待機中なら即座にシーンにアタッチ
+        if (this.scene && !this.currentVrm) {
+          this.attachVrmToScene(vrm);
+        }
+      },
+      (progress) => {
+        if (progress.total && progress.total > 0) {
+          this.loadProgressPercent = Math.min(99, Math.round((progress.loaded / progress.total) * 100));
+        } else {
+          const estimatedTotal = 14500000;
+          this.loadProgressPercent = Math.min(95, Math.round((progress.loaded / estimatedTotal) * 100));
+        }
+        this.updateOverlayProgress(this.loadProgressPercent);
+      },
+      (error) => {
+        console.error('VRM load error:', error);
+        this.isPreloading = false;
+        const text = document.getElementById('vrm-loading-text');
+        if (text) {
+          text.innerHTML = '⚠️ 3Dモデル読込に失敗しました';
+          text.style.color = '#ff6688';
+        }
+      }
+    );
+  }
+
   init(containerId = 'vrm-viewer-container') {
-    if (this.isInitialized) {
-      this.resize();
-      this.start();
-      return;
-    }
-    
     this.container = document.getElementById(containerId);
     if (!this.container) return;
 
-    const width = this.container.clientWidth || 320;
-    const height = this.container.clientHeight || 280;
+    if (!this.isInitialized) {
+      const width = this.container.clientWidth || 320;
+      const height = this.container.clientHeight || 280;
 
-    // 1. Scene
-    this.scene = new THREE.Scene();
+      // 1. Scene
+      this.scene = new THREE.Scene();
 
-    // 2. Camera
-    this.camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20.0);
-    this.camera.position.set(0, 0.52, 1.75);
+      // 2. Camera
+      this.camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20.0);
+      this.camera.position.set(0, 0.52, 1.75);
 
-    // 3. Renderer
-    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.container.appendChild(this.renderer.domElement);
+      // 3. Renderer
+      this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+      this.renderer.setSize(width, height);
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.container.appendChild(this.renderer.domElement);
 
-    // 4. OrbitControls
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.08;
-    this.controls.target.set(0, 0.48, 0);
-    this.controls.minDistance = 0.7;
-    this.controls.maxDistance = 3.2;
-    this.controls.maxPolarAngle = Math.PI * 0.58;
-    this.controls.minPolarAngle = Math.PI * 0.15;
-    this.controls.update();
+      // 4. OrbitControls
+      this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+      this.controls.enableDamping = true;
+      this.controls.dampingFactor = 0.08;
+      this.controls.target.set(0, 0.48, 0);
+      this.controls.minDistance = 0.7;
+      this.controls.maxDistance = 3.2;
+      this.controls.maxPolarAngle = Math.PI * 0.58;
+      this.controls.minPolarAngle = Math.PI * 0.15;
+      this.controls.update();
 
-    // 5. Lights
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1a2634, 1.6);
-    this.scene.add(hemiLight);
+      // 5. Lights
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1a2634, 1.6);
+      this.scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
-    dirLight.position.set(1.2, 2.0, 1.8);
-    this.scene.add(dirLight);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
+      dirLight.position.set(1.2, 2.0, 1.8);
+      this.scene.add(dirLight);
 
-    const rimLight = new THREE.DirectionalLight(0x00e5ff, 1.4);
-    rimLight.position.set(-1.5, 1.2, -1.2);
-    this.scene.add(rimLight);
+      const rimLight = new THREE.DirectionalLight(0x00e5ff, 1.4);
+      rimLight.position.set(-1.5, 1.2, -1.2);
+      this.scene.add(rimLight);
 
-    // 6. Resize Observer
-    if (window.ResizeObserver) {
-      const ro = new ResizeObserver(() => this.resize());
-      ro.observe(this.container);
+      // 6. Resize Observer
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => this.resize());
+        ro.observe(this.container);
+      }
+      window.addEventListener('resize', () => this.resize());
+
+      this.isInitialized = true;
     }
-    window.addEventListener('resize', () => this.resize());
 
-    this.isInitialized = true;
-    this.loadModel('assets/dog-mascot.vrm');
+    // すでにプリロードが完了していれば即座にシーンにアタッチ
+    if (this.isLoaded && this.preloadedVrm) {
+      this.attachVrmToScene(this.preloadedVrm);
+    } else {
+      // まだロード中か未開始
+      const overlay = document.getElementById('vrm-loading-overlay');
+      if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '1';
+        this.updateOverlayProgress(this.loadProgressPercent);
+      }
+      if (!this.isPreloading) {
+        this.preload();
+      }
+    }
+
+    this.resize();
     this.start();
+  }
+
+  attachVrmToScene(vrm) {
+    if (!this.scene) return;
+    if (this.currentVrm) {
+      this.scene.remove(this.currentVrm.scene);
+    }
+    this.currentVrm = vrm;
+    this.scene.add(vrm.scene);
+
+    // 表情を再適用
+    this.setExpression(window.gameState?.vrmExpression || 'happy');
+
+    // オーバーレイを即座にフェードアウト
+    const overlay = document.getElementById('vrm-loading-overlay');
+    if (overlay) {
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.style.display = 'none'; }, 200);
+    }
+  }
+
+  updateOverlayProgress(percent) {
+    const pEl = document.getElementById('vrm-loading-progress');
+    if (pEl && percent > 0) {
+      pEl.textContent = `読込中 ${percent}%`;
+    }
   }
 
   resize() {
@@ -4587,55 +4687,6 @@ class VrmAvatarController {
     }
   }
 
-  loadModel(url) {
-    if (this.isLoading) return;
-    this.isLoading = true;
-
-    const overlay = document.getElementById('vrm-loading-overlay');
-    if (overlay) overlay.style.opacity = '1';
-
-    const loader = new GLTFLoader();
-    loader.register((parser) => new VRMLoaderPlugin(parser));
-
-    loader.load(
-      url,
-      (gltf) => {
-        const vrm = gltf.userData.vrm;
-        if (!vrm) {
-          console.error('VRM data not found in gltf');
-          return;
-        }
-
-        if (this.currentVrm) {
-          this.scene.remove(this.currentVrm.scene);
-        }
-
-        this.currentVrm = vrm;
-        this.scene.add(vrm.scene);
-
-        // 自然なアイドル立ちポーズの適用
-        this.applyNaturalPose(vrm);
-
-        // 表情の初期化
-        this.setExpression(window.gameState?.vrmExpression || 'happy');
-
-        this.isLoading = false;
-        if (overlay) {
-          overlay.style.opacity = '0';
-          setTimeout(() => { overlay.style.display = 'none'; }, 400);
-        }
-      },
-      (progress) => {},
-      (error) => {
-        console.error('VRM load error:', error);
-        this.isLoading = false;
-        if (overlay) {
-          overlay.innerHTML = '<div style="font-size: 24px;">⚠️</div><div style="font-size: 12px; color: #ff6688; margin-top: 4px;">3Dモデル読込に失敗しました</div>';
-        }
-      }
-    );
-  }
-
   applyNaturalPose(vrm) {
     if (!vrm || !vrm.humanoid) return;
     const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
@@ -4644,27 +4695,18 @@ class VrmAvatarController {
     const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
     const head = vrm.humanoid.getNormalizedBoneNode('head');
 
-    if (leftUpperArm) {
-      leftUpperArm.rotation.set(0.15, 0.1, -1.05);
-    }
-    if (rightUpperArm) {
-      rightUpperArm.rotation.set(0.15, -0.1, 1.05);
-    }
-    if (leftLowerArm) {
-      leftLowerArm.rotation.set(0.2, 0.25, 0.05);
-    }
-    if (rightLowerArm) {
-      rightLowerArm.rotation.set(0.2, -0.25, -0.05);
-    }
-    if (head) {
-      head.rotation.set(-0.02, 0, 0.03);
-    }
+    if (leftUpperArm) leftUpperArm.rotation.set(0.15, 0.1, -1.05);
+    if (rightUpperArm) rightUpperArm.rotation.set(0.15, -0.1, 1.05);
+    if (leftLowerArm) leftLowerArm.rotation.set(0.2, 0.25, 0.05);
+    if (rightLowerArm) rightLowerArm.rotation.set(0.2, -0.25, -0.05);
+    if (head) head.rotation.set(-0.02, 0, 0.03);
   }
 
   setExpression(exprName) {
     this.currentExpression = exprName;
-    if (!this.currentVrm || !this.currentVrm.expressionManager) return;
-    const em = this.currentVrm.expressionManager;
+    const vrm = this.currentVrm || this.preloadedVrm;
+    if (!vrm || !vrm.expressionManager) return;
+    const em = vrm.expressionManager;
 
     const presets = ['happy', 'neutral', 'surprised', 'angry', 'relaxed', 'blinkLeft', 'blinkRight', 'aa', 'oh'];
     presets.forEach(p => em.setValue(p, 0));
@@ -4794,6 +4836,22 @@ class VrmAvatarController {
 }
 
 window.VrmAvatarManager = new VrmAvatarController();
+
+// 🚀 バックグラウンド事前ロード（Preload）の自動開始
+const triggerPreload = () => {
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.preload();
+  }
+};
+if (typeof window !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(triggerPreload, 250);
+    });
+  } else {
+    setTimeout(triggerPreload, 250);
+  }
+}
 </script>
 
 <script>
