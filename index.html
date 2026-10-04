@@ -3373,8 +3373,8 @@
   {
     "imports": {
       "three": "./assets/libs/three.module.min.js",
-      "three/addons/controls/OrbitControls.js": "./assets/libs/OrbitControls.min.js",
-      "three/addons/loaders/GLTFLoader.js": "./assets/libs/GLTFLoader.min.js",
+      "three/addons/controls/OrbitControls.js": "./assets/libs/OrbitControls.js",
+      "three/addons/loaders/GLTFLoader.js": "./assets/libs/GLTFLoader.js",
       "@pixiv/three-vrm": "./assets/libs/three-vrm.module.min.js"
     }
   }
@@ -4210,17 +4210,17 @@
               <!-- アバタータイプ切り替えバー -->
               <div class="avatar-type-bar">
                 <button class="avatar-type-btn active" id="btn-type-vrm" onclick="selectAvatarType('vrm')">
-                  🐶 3D ドッグ・パイロット (dog-mascot)
+                  🐶 3D ドッグ・パイロット
                 </button>
-                <button class="avatar-type-btn" id="btn-type-classic" onclick="selectAvatarType('classic')">
-                  👤 クラシック 2Dパイロット
+                <button class="avatar-type-btn" id="btn-type-costume" onclick="onCostumePrepClick()" style="opacity: 0.85;">
+                  👗 きせかえ <span class="avatar-prep-badge" style="background: rgba(255,215,0,0.15); color: #ffd700; border-color: rgba(255,215,0,0.4); font-size: 10px; padding: 1px 6px; margin-left: 6px;">準備中</span>
                 </button>
               </div>
 
               <!-- 1. 3D VRMモデル (dog-mascot.vrm) 設定パネル -->
               <div id="vrm-avatar-panel" style="display: flex; flex-direction: column; gap: 10px;">
-                <!-- 3D ビューポート -->
-                <div id="vrm-viewer-container" style="position: relative; width: 100%; height: 280px; background: radial-gradient(circle at 50% 50%, rgba(13, 30, 60, 0.9) 0%, rgba(5, 12, 25, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.15);">
+                <!-- 3D ビューポート（全身が美しく収まる320px） -->
+                <div id="vrm-viewer-container" style="position: relative; width: 100%; height: 320px; min-height: 300px; background: radial-gradient(circle at 50% 50%, rgba(13, 30, 60, 0.9) 0%, rgba(5, 12, 25, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.18);">
                   <div id="vrm-loading-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(10, 25, 50, 0.95) 0%, rgba(5, 12, 25, 0.98) 100%); z-index: 10; pointer-events: none; transition: opacity 0.3s ease;">
                     <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
                       <img src="assets/dog-mascot-icon.png" style="width: 76px; height: 76px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.6)); animation: bounceDog 1.2s infinite alternate;" alt="dog-mascot">
@@ -4580,44 +4580,58 @@ class VrmAvatarController {
     if (!this.container) return;
 
     if (!this.isInitialized) {
-      const width = this.container.clientWidth || 320;
-      const height = this.container.clientHeight || 280;
+      const rect = this.container.getBoundingClientRect();
+      const width = rect.width > 50 ? rect.width : 340;
+      const height = rect.height > 50 ? rect.height : 320;
 
       // 1. Scene
       this.scene = new THREE.Scene();
 
-      // 2. Camera
-      this.camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20.0);
-      this.camera.position.set(0, 0.52, 1.75);
+      // 2. Camera（全身がすっぽり美しく収まる視野角＆距離）
+      this.camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 20.0);
+      this.camera.position.set(0, 0.48, 2.45);
 
       // 3. Renderer
       this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
       this.renderer.setSize(width, height);
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1.1;
+
+      // キャンバスをコンテナにピッタリフィット
+      this.renderer.domElement.style.width = '100%';
+      this.renderer.domElement.style.height = '100%';
+      this.renderer.domElement.style.display = 'block';
+      this.renderer.domElement.style.position = 'absolute';
+      this.renderer.domElement.style.top = '0';
+      this.renderer.domElement.style.left = '0';
       this.container.appendChild(this.renderer.domElement);
 
       // 4. OrbitControls
       this.controls = new OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.08;
-      this.controls.target.set(0, 0.48, 0);
-      this.controls.minDistance = 0.7;
-      this.controls.maxDistance = 3.2;
-      this.controls.maxPolarAngle = Math.PI * 0.58;
-      this.controls.minPolarAngle = Math.PI * 0.15;
+      this.controls.target.set(0, 0.44, 0); // モデルの中心
+      this.controls.minDistance = 0.8;
+      this.controls.maxDistance = 4.2;
+      this.controls.maxPolarAngle = Math.PI * 0.60;
+      this.controls.minPolarAngle = Math.PI * 0.12;
       this.controls.update();
 
-      // 5. Lights
-      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1a2634, 1.6);
+      // 5. Lights（全身が鮮明に明るく見える4点ライト構成）
+      const ambLight = new THREE.AmbientLight(0xffffff, 1.2);
+      this.scene.add(ambLight);
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x223355, 1.8);
       this.scene.add(hemiLight);
 
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
-      dirLight.position.set(1.2, 2.0, 1.8);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 2.2);
+      dirLight.position.set(1.5, 3.0, 2.2);
       this.scene.add(dirLight);
 
-      const rimLight = new THREE.DirectionalLight(0x00e5ff, 1.4);
-      rimLight.position.set(-1.5, 1.2, -1.2);
+      const rimLight = new THREE.DirectionalLight(0x00e5ff, 1.6);
+      rimLight.position.set(-1.8, 1.5, -1.2);
       this.scene.add(rimLight);
 
       // 6. Resize Observer
@@ -4634,7 +4648,6 @@ class VrmAvatarController {
     if (this.isLoaded && this.preloadedVrm) {
       this.attachVrmToScene(this.preloadedVrm);
     } else {
-      // まだロード中か未開始
       const overlay = document.getElementById('vrm-loading-overlay');
       if (overlay) {
         overlay.style.display = 'flex';
@@ -4658,7 +4671,8 @@ class VrmAvatarController {
     this.currentVrm = vrm;
     this.scene.add(vrm.scene);
 
-    // 表情を再適用
+    // 自然なポーズと表情を再適用
+    this.applyNaturalPose(vrm);
     this.setExpression(window.gameState?.vrmExpression || 'happy');
 
     // オーバーレイを即座にフェードアウト
@@ -4678,8 +4692,9 @@ class VrmAvatarController {
 
   resize() {
     if (!this.container || !this.renderer || !this.camera) return;
-    const width = this.container.clientWidth;
-    const height = this.container.clientHeight;
+    const rect = this.container.getBoundingClientRect();
+    const width = rect.width > 50 ? rect.width : (this.container.clientWidth || 340);
+    const height = rect.height > 50 ? rect.height : (this.container.clientHeight || 320);
     if (width > 0 && height > 0) {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
@@ -4695,11 +4710,12 @@ class VrmAvatarController {
     const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
     const head = vrm.humanoid.getNormalizedBoneNode('head');
 
-    if (leftUpperArm) leftUpperArm.rotation.set(0.15, 0.1, -1.05);
-    if (rightUpperArm) rightUpperArm.rotation.set(0.15, -0.1, 1.05);
-    if (leftLowerArm) leftLowerArm.rotation.set(0.2, 0.25, 0.05);
-    if (rightLowerArm) rightLowerArm.rotation.set(0.2, -0.25, -0.05);
-    if (head) head.rotation.set(-0.02, 0, 0.03);
+    // 自然で愛らしい立ち姿（腕を自然に下ろして少し肘を曲げる）
+    if (leftUpperArm) leftUpperArm.rotation.set(0.12, 0.15, -1.1);
+    if (rightUpperArm) rightUpperArm.rotation.set(0.12, -0.15, 1.1);
+    if (leftLowerArm) leftLowerArm.rotation.set(0.25, 0.3, 0.1);
+    if (rightLowerArm) rightLowerArm.rotation.set(0.25, -0.3, -0.1);
+    if (head) head.rotation.set(-0.02, 0, 0.04);
   }
 
   setExpression(exprName) {
@@ -4708,17 +4724,25 @@ class VrmAvatarController {
     if (!vrm || !vrm.expressionManager) return;
     const em = vrm.expressionManager;
 
-    const presets = ['happy', 'neutral', 'surprised', 'angry', 'relaxed', 'blinkLeft', 'blinkRight', 'aa', 'oh'];
-    presets.forEach(p => em.setValue(p, 0));
+    const allPresets = ['happy', 'neutral', 'surprised', 'angry', 'relaxed', 'sad', 'blinkLeft', 'blinkRight', 'blink', 'aa', 'oh'];
+    allPresets.forEach(p => {
+      try { em.setValue(p, 0); } catch(e) {}
+    });
 
-    if (exprName === 'wink') {
-      em.setValue('blinkLeft', 1.0);
-      em.setValue('happy', 0.6);
+    if (exprName === 'happy') {
+      em.setValue('happy', 1.0);
+    } else if (exprName === 'neutral') {
+      em.setValue('relaxed', 1.0);
     } else if (exprName === 'surprised') {
       em.setValue('surprised', 1.0);
       em.setValue('oh', 0.4);
+    } else if (exprName === 'angry') {
+      em.setValue('angry', 1.0);
+    } else if (exprName === 'wink') {
+      em.setValue('blinkLeft', 1.0);
+      em.setValue('happy', 0.6);
     } else {
-      em.setValue(exprName, 1.0);
+      try { em.setValue(exprName, 1.0); } catch(e) {}
     }
     em.update();
   }
@@ -4726,8 +4750,8 @@ class VrmAvatarController {
   triggerAction(actionName) {
     if (actionName === 'reset') {
       if (this.controls) {
-        this.camera.position.set(0, 0.52, 1.75);
-        this.controls.target.set(0, 0.48, 0);
+        this.camera.position.set(0, 0.48, 2.45);
+        this.controls.target.set(0, 0.44, 0);
         this.controls.update();
       }
       return;
@@ -4758,7 +4782,7 @@ class VrmAvatarController {
   }
 
   update() {
-    const delta = this.clock.getDelta();
+    const delta = Math.min(this.clock.getDelta(), 0.05); // SpringBone暴走を防ぐキャップ
     const elapsed = this.clock.getElapsedTime();
 
     if (this.controls) {
@@ -4772,13 +4796,15 @@ class VrmAvatarController {
       // 1. 自動まばたき
       if (this.currentExpression !== 'wink') {
         this.blinkTimer += delta;
-        if (this.blinkTimer > 3.5) {
-          const blinkProgress = (this.blinkTimer - 3.5) / this.blinkDuration;
+        if (this.blinkTimer > 3.2) {
+          const blinkProgress = (this.blinkTimer - 3.2) / this.blinkDuration;
           if (blinkProgress <= 1.0) {
             const val = Math.sin(blinkProgress * Math.PI);
             em.setValue('blink', val);
+            em.update();
           } else {
             em.setValue('blink', 0);
+            em.update();
             this.blinkTimer = Math.random() * 1.5;
           }
         }
@@ -4791,31 +4817,33 @@ class VrmAvatarController {
       const rightUpperArm = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm');
 
       if (!this.actionState) {
-        const breath = Math.sin(elapsed * 2.2) * 0.02;
-        if (chest) chest.rotation.x = breath * 0.5;
+        const breath = Math.sin(elapsed * 2.4) * 0.025;
+        if (chest) chest.rotation.x = breath * 0.6;
         if (head) {
-          head.rotation.x = -0.02 + Math.sin(elapsed * 1.8) * 0.015;
-          head.rotation.y = Math.sin(elapsed * 0.8) * 0.04;
+          head.rotation.x = -0.02 + Math.sin(elapsed * 1.8) * 0.02;
+          head.rotation.y = Math.sin(elapsed * 1.0) * 0.05;
+          head.rotation.z = 0.04 + Math.sin(elapsed * 1.4) * 0.03; // 愛らしく小首をかしげる
         }
         if (vrm.scene) {
-          vrm.scene.position.y = Math.sin(elapsed * 2.0) * 0.006;
+          vrm.scene.position.y = Math.sin(elapsed * 2.0) * 0.008;
         }
       } else if (this.actionState === 'bark') {
-        // 「ワン！」アクション
+        // 「ワン！」アクション（元気にぴょん！と跳ねる）
         this.actionTime += delta;
         const t = this.actionTime;
-        if (t < 0.8) {
-          const hop = Math.sin(t / 0.8 * Math.PI) * 0.08;
+        if (t < 0.9) {
+          const hop = Math.sin((t / 0.9) * Math.PI) * 0.12;
           if (vrm.scene) vrm.scene.position.y = hop;
           if (head) {
-            head.rotation.x = 0.12 * Math.sin(t * 15);
-            head.rotation.y = 0.15 * Math.sin(t * 12);
+            head.rotation.x = 0.15 * Math.sin(t * 18);
+            head.rotation.y = 0.2 * Math.sin(t * 14);
           }
-          if (leftUpperArm) leftUpperArm.rotation.z = -1.05 - Math.sin(t * 15) * 0.35;
-          if (rightUpperArm) rightUpperArm.rotation.z = 1.05 + Math.sin(t * 15) * 0.35;
+          if (leftUpperArm) leftUpperArm.rotation.z = -1.1 - Math.sin(t * 18) * 0.4;
+          if (rightUpperArm) rightUpperArm.rotation.z = 1.1 + Math.sin(t * 18) * 0.4;
           if (em) {
-            em.setValue('aa', Math.abs(Math.sin(t * 12)) * 0.8);
+            em.setValue('aa', Math.abs(Math.sin(t * 14)) * 0.9);
             em.setValue('happy', 1.0);
+            em.update();
           }
         } else {
           this.actionState = null;
@@ -7804,33 +7832,33 @@ const VRM_AVATAR_CONFIG = {
   isReady: true
 };
 
-function selectAvatarType(type) {
-  gameState.avatarType = type;
-  const isVrm = type === 'vrm';
+function selectAvatarType(type = 'vrm') {
+  gameState.avatarType = 'vrm';
   
   const btnVrm = document.getElementById('btn-type-vrm');
-  const btnClassic = document.getElementById('btn-type-classic');
   const panelVrm = document.getElementById('vrm-avatar-panel');
   const panelClassic = document.getElementById('legacy-avatar-parts-wrapper');
 
-  if (btnVrm) btnVrm.classList.toggle('active', isVrm);
-  if (btnClassic) btnClassic.classList.toggle('active', !isVrm);
+  if (btnVrm) btnVrm.classList.add('active');
+  if (panelVrm) panelVrm.style.display = 'flex';
+  if (panelClassic) panelClassic.style.display = 'none';
 
-  if (panelVrm) panelVrm.style.display = isVrm ? 'flex' : 'none';
-  if (panelClassic) panelClassic.style.display = !isVrm ? 'block' : 'none';
-
-  if (isVrm) {
-    if (window.VrmAvatarManager) {
-      window.VrmAvatarManager.init('vrm-viewer-container');
-      window.VrmAvatarManager.resize();
-      window.VrmAvatarManager.start();
-    }
-  } else {
-    if (window.VrmAvatarManager) window.VrmAvatarManager.stop();
-    renderAvatarCategoryOptions();
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.init('vrm-viewer-container');
+    window.VrmAvatarManager.resize();
+    window.VrmAvatarManager.start();
   }
 
   updatePilotDisplay();
+}
+
+function onCostumePrepClick() {
+  const msg = '👗 3Dドッグ・パイロットの着せ替え機能は現在アップデート準備中です！\n公開まで楽しみにお待ちください！';
+  if (typeof showSystemNoticeModal === 'function') {
+    showSystemNoticeModal('👗 着せ替え：準備中', msg);
+  } else {
+    alert(msg);
+  }
   if (window.playSound) playSound('click');
 }
 
@@ -7855,13 +7883,23 @@ function triggerVrmAction(action) {
 }
 
 function initAvatarSettingsUI() {
-  selectAvatarType(gameState.avatarType || 'vrm');
+  selectAvatarType('vrm');
   setAvatarExpression(gameState.vrmExpression || 'happy');
-  setTimeout(() => {
+  
+  // モーダルオープン時のコンテナ描画確定に合わせた多段階リサイズ
+  requestAnimationFrame(() => {
     if (window.VrmAvatarManager) {
+      window.VrmAvatarManager.init('vrm-viewer-container');
       window.VrmAvatarManager.resize();
+      window.VrmAvatarManager.start();
     }
+  });
+  setTimeout(() => {
+    if (window.VrmAvatarManager) window.VrmAvatarManager.resize();
   }, 60);
+  setTimeout(() => {
+    if (window.VrmAvatarManager) window.VrmAvatarManager.resize();
+  }, 200);
 }
 
 // --------------------------------------------------------------------------
