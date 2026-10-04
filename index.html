@@ -1758,80 +1758,85 @@
       }
     }
 
-    /* アバター設定 準備中スタイル (VRMモデル導入準備) */
+    /* アバター設定 3D VRMモデル＆クラシックスタイル */
     .avatar-prep-badge {
       display: inline-block;
       font-size: 10px;
       font-weight: bold;
-      color: #ffd700;
-      background: rgba(255, 215, 0, 0.15);
-      border: 1px solid rgba(255, 215, 0, 0.5);
+      color: #00ff88;
+      background: rgba(0, 255, 136, 0.15);
+      border: 1px solid rgba(0, 255, 136, 0.5);
       border-radius: 4px;
       padding: 1px 6px;
       margin-left: 4px;
       letter-spacing: 0.5px;
       vertical-align: middle;
+      animation: pulseVrmBadge 2s infinite alternate;
     }
-    .avatar-maintenance-container {
-      background: linear-gradient(135deg, rgba(8, 20, 42, 0.85) 0%, rgba(13, 30, 60, 0.7) 100%);
-      border: 1.5px dashed rgba(0, 229, 255, 0.4);
-      border-radius: 14px;
-      padding: 26px 18px;
-      text-align: center;
+    @keyframes pulseVrmBadge {
+      0% { box-shadow: 0 0 4px rgba(0, 255, 136, 0.2); }
+      100% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.7); }
+    }
+    .avatar-type-bar {
       display: flex;
-      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+      background: rgba(10, 20, 42, 0.6);
+      padding: 5px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 229, 255, 0.2);
+    }
+    .avatar-type-btn {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      font-weight: bold;
+      border-radius: 8px;
+      border: 1.5px solid transparent;
+      background: rgba(15, 23, 42, 0.7);
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 280px;
-      position: relative;
-      overflow: hidden;
-    }
-    .avatar-maintenance-icon {
-      font-size: 44px;
-      margin-bottom: 10px;
-      filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.6));
-      animation: floatAvatarIcon 3s ease-in-out infinite alternate;
-    }
-    @keyframes floatAvatarIcon {
-      0% { transform: translateY(0px); }
-      100% { transform: translateY(-6px); }
-    }
-    .avatar-maintenance-title {
-      font-size: 17px;
-      font-weight: 900;
-      color: #ffd700;
-      text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
-      margin-bottom: 8px;
-      letter-spacing: 1px;
-    }
-    .avatar-maintenance-badge {
-      display: inline-flex;
-      align-items: center;
       gap: 6px;
-      background: rgba(0, 229, 255, 0.15);
-      border: 1px solid var(--primary-cyan);
-      color: var(--primary-cyan);
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
+    }
+    .avatar-type-btn:hover {
+      color: #fff;
+      border-color: rgba(0, 229, 255, 0.4);
+    }
+    .avatar-type-btn.active {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(79, 70, 229, 0.35));
+      border-color: #00e5ff;
+      color: #fff;
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+    }
+    .vrm-expr-btn {
+      padding: 6px 12px;
+      font-size: 12px;
       font-weight: bold;
-      margin-bottom: 12px;
-      letter-spacing: 0.5px;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      background: rgba(10, 25, 50, 0.7);
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s;
     }
-    .avatar-maintenance-desc {
-      font-size: 13px;
-      color: #94a3b8;
-      line-height: 1.6;
-      max-width: 400px;
-      margin-bottom: 14px;
+    .vrm-expr-btn:hover {
+      border-color: #ffd700;
+      color: #ffd700;
+      transform: translateY(-1px);
     }
-    .avatar-maintenance-note {
-      font-size: 11.5px;
-      color: #00ff88;
-      background: rgba(0, 255, 136, 0.1);
-      border: 1px solid rgba(0, 255, 136, 0.3);
-      padding: 6px 14px;
-      border-radius: 8px;
+    .vrm-expr-btn.active {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 153, 0, 0.35));
+      border-color: #ffd700;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
+    @keyframes bounceDog {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-8px) scale(1.08); }
     }
 
     /* === 提案2: 漢字ミュージアム 大タブナビゲーション === */
@@ -3364,7 +3369,17 @@
       font-size: 13px;
     }
   </style>
-<script src="assets/qrcode.min.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./assets/libs/three.module.js",
+      "three/addons/controls/OrbitControls.js": "./assets/libs/OrbitControls.js",
+      "three/addons/loaders/GLTFLoader.js": "./assets/libs/GLTFLoader.js",
+      "@pixiv/three-vrm": "./assets/libs/three-vrm.module.js"
+    }
+  }
+  </script>
+  <script src="assets/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -4111,7 +4126,7 @@
       <!-- 切り替えタブ -->
       <div class="custom-tab-buttons" style="padding: 0 16px;">
         <button class="custom-tab-btn" id="btn-tab-avatar" onclick="switchCustomMainTab('pilot')">
-          🧑🚀 パイロット設定 (アバター＆二つ名) <span class="avatar-prep-badge">準備中・・・</span>
+          🧑🚀 パイロット設定 (アバター＆二つ名) <span class="avatar-prep-badge">✨ 3D VRM対応!</span>
         </button>
         <button class="custom-tab-btn active" id="btn-tab-ship" onclick="switchCustomMainTab('ship')">
           ✈️ ジェット機＆ビーム
@@ -4142,17 +4157,17 @@
           </div>
         </div>
 
-        <!-- 2. パイロット設定 タブコンテンツ（アバター設定はVRM準備中・二つ名コードネーム） -->
+        <!-- 2. パイロット設定 タブコンテンツ（3D VRMモデル＆二つ名コードネーム） -->
         <div id="custom-tab-content-avatar" style="display: none;">
           <div class="hangar-pilot-section">
             <!-- 左側: アバタープレビュー ＆ 二つ名スロット -->
             <div style="background: rgba(10, 20, 42, 0.7); border: 1.5px solid rgba(0, 229, 255, 0.3); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
               <div class="avatar-preview-container" style="padding: 0; background: none; border: none; box-shadow: none; position: relative;">
-                <div id="avatar-full-preview" style="width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; opacity: 0.6; filter: grayscale(25%);">
-                  <!-- SVGレンダリング -->
+                <div id="avatar-full-preview" style="width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; position: relative;">
+                  <!-- JS動的レンダリング -->
                 </div>
-                <div style="position: absolute; bottom: 4px; background: rgba(5, 12, 24, 0.9); border: 1px solid #ffd700; color: #ffd700; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(0,0,0,0.6);">
-                  アバター: 準備中・・・
+                <div id="avatar-preview-badge" style="position: absolute; bottom: 4px; background: rgba(5, 12, 24, 0.9); border: 1px solid #00ff88; color: #00ff88; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(0,0,0,0.6);">
+                  🐶 3Dマスコット
                 </div>
               </div>
 
@@ -4190,22 +4205,80 @@
               </div>
             </div>
 
-            <!-- 右側: アバター設定 準備中パネル -->
-            <div style="flex: 1; display: flex; flex-direction: column;">
-              <div class="avatar-maintenance-container">
-                <div class="avatar-maintenance-icon">🕶️</div>
-                <div class="avatar-maintenance-title">アバター設定：準備中・・・</div>
-                <div class="avatar-maintenance-badge">🚀 3Dアバター (VRMモデル) アップデート準備中</div>
-                <div class="avatar-maintenance-desc">
-                  より迫力ある3Dパイロット（VRMモデル）で宇宙へ出撃できるよう、現在新システムを準備中です。<br>
-                  公開まで楽しみにお待ちください！
+            <!-- 右側: アバター設定パネル（3D VRM ＆ クラシック） -->
+            <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
+              <!-- アバタータイプ切り替えバー -->
+              <div class="avatar-type-bar">
+                <button class="avatar-type-btn active" id="btn-type-vrm" onclick="selectAvatarType('vrm')">
+                  🐶 3D ドッグ・パイロット (dog-mascot)
+                </button>
+                <button class="avatar-type-btn" id="btn-type-classic" onclick="selectAvatarType('classic')">
+                  👤 クラシック 2Dパイロット
+                </button>
+              </div>
+
+              <!-- 1. 3D VRMモデル (dog-mascot.vrm) 設定パネル -->
+              <div id="vrm-avatar-panel" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- 3D ビューポート -->
+                <div id="vrm-viewer-container" style="position: relative; width: 100%; height: 280px; background: radial-gradient(circle at 50% 50%, rgba(13, 30, 60, 0.9) 0%, rgba(5, 12, 25, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.15);">
+                  <div id="vrm-loading-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(5, 12, 25, 0.85); z-index: 10; pointer-events: none; transition: opacity 0.4s ease;">
+                    <div style="font-size: 36px; animation: bounceDog 1s infinite alternate;">🐶</div>
+                    <div style="font-size: 13px; color: #00e5ff; font-weight: bold; margin-top: 6px;">3D ドッグ・マスコット 起動中...</div>
+                    <div style="font-size: 11px; color: #8cb0d0; margin-top: 2px;">dog-mascot.vrm をロードしています</div>
+                  </div>
+                  <!-- 操作ヒント -->
+                  <div style="position: absolute; top: 8px; right: 10px; background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 6px; font-size: 10px; color: #8cb0d0; pointer-events: none; border: 1px solid rgba(255,255,255,0.1); z-index: 5;">
+                    🖱️ ドラッグで360°回転 / ホイールでズーム
+                  </div>
+                  <!-- アクションボタン（ビューポート内） -->
+                  <div style="position: absolute; bottom: 8px; right: 10px; display: flex; gap: 6px; z-index: 5;">
+                    <button class="action-sub-btn" onclick="triggerVrmAction('bark')" style="padding: 5px 12px; font-size: 11.5px; background: rgba(255, 215, 0, 0.2); border-color: #ffd700; color: #ffd700; font-weight: bold;" title="元気にワン！とあいさつ">
+                      🐾 ワン！とごあいさつ
+                    </button>
+                    <button class="action-sub-btn" onclick="triggerVrmAction('reset')" style="padding: 5px 10px; font-size: 11.5px;" title="正面に向きを戻す">
+                      🔄 正面
+                    </button>
+                  </div>
                 </div>
-                <div class="avatar-maintenance-note">
-                  💡 左側の「二つ名（コードネーム）」は引き続き自由にカスタマイズ可能です！
+
+                <!-- 表情コントロール -->
+                <div style="background: rgba(10, 20, 42, 0.7); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 10px; padding: 10px 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="font-size: 11.5px; color: #00e5ff; font-weight: bold; letter-spacing: 0.5px;">🎭 表情・リアクション設定</div>
+                    <div style="font-size: 10.5px; color: #ffd700;">✨ 自動まばたき＆耳・しっぽスプリング連動</div>
+                  </div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="vrm-expr-btn active" id="expr-btn-happy" onclick="setAvatarExpression('happy')">
+                      😊 えがお
+                    </button>
+                    <button class="vrm-expr-btn" id="expr-btn-neutral" onclick="setAvatarExpression('neutral')">
+                      🐶 つぶらな瞳
+                    </button>
+                    <button class="vrm-expr-btn" id="expr-btn-surprised" onclick="setAvatarExpression('surprised')">
+                      😲 びっくり
+                    </button>
+                    <button class="vrm-expr-btn" id="expr-btn-angry" onclick="setAvatarExpression('angry')">
+                      😤 きあい
+                    </button>
+                    <button class="vrm-expr-btn" id="expr-btn-wink" onclick="setAvatarExpression('wink')">
+                      😉 ウインク
+                    </button>
+                  </div>
+                </div>
+
+                <!-- パイロットステータスカード -->
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #8cb0d0;">
+                  <div>
+                    <span style="color: #fff; font-weight: bold;">🐕 機長マスコット:</span> dog-mascot
+                    <span style="margin-left: 8px; color: #ffd700; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255,215,0,0.3); padding: 1px 6px; border-radius: 4px;">VRM 1.0</span>
+                  </div>
+                  <div style="color: #64748b;">
+                    Author: fumiyan
+                  </div>
                 </div>
               </div>
 
-              <!-- 既存のアバターパーツ選択（将来のVRMモデルUI連携用に非表示で保持） -->
+              <!-- 2. 既存のクラシックアバターパーツ選択 -->
               <div id="legacy-avatar-parts-wrapper" style="display: none;">
                 <div class="avatar-category-nav" style="margin-bottom: 8px;">
                   <button class="avatar-cat-btn active" id="cat-btn-base" onclick="switchAvatarCategory('base')">👤 かお・はだ</button>
@@ -4213,7 +4286,7 @@
                   <button class="avatar-cat-btn" id="cat-btn-suit" onclick="switchAvatarCategory('suit')">🥋 スーツ</button>
                   <button class="avatar-cat-btn" id="cat-btn-acc" onclick="switchAvatarCategory('accessory')">✨ そうしょく</button>
                 </div>
-                <div class="avatar-parts-grid" id="avatar-parts-grid" style="max-height: 440px; overflow-y: auto;">
+                <div class="avatar-parts-grid" id="avatar-parts-grid" style="max-height: 380px; overflow-y: auto;">
                   <!-- JS動的生成 -->
                 </div>
               </div>
@@ -4408,6 +4481,320 @@
   <div id="print-certificate-wrapper" style="display: none;"></div>
 
 </div>
+
+<!-- ==========================================================================
+     VRM 3D アバターレンダリングマネージャー (Three.js & @pixiv/three-vrm)
+     ========================================================================== -->
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { VRMLoaderPlugin } from '@pixiv/three-vrm';
+
+class VrmAvatarController {
+  constructor() {
+    this.container = null;
+    this.scene = null;
+    this.camera = null;
+    this.renderer = null;
+    this.controls = null;
+    this.currentVrm = null;
+    this.clock = new THREE.Clock();
+    this.animationFrameId = null;
+    this.isInitialized = false;
+    this.isLoading = false;
+    this.currentExpression = 'happy';
+    
+    // 自動まばたき
+    this.blinkTimer = 0;
+    this.blinkDuration = 0.16;
+    
+    // アクション用タイマー
+    this.actionState = null;
+    this.actionTime = 0;
+  }
+
+  init(containerId = 'vrm-viewer-container') {
+    if (this.isInitialized) {
+      this.resize();
+      this.start();
+      return;
+    }
+    
+    this.container = document.getElementById(containerId);
+    if (!this.container) return;
+
+    const width = this.container.clientWidth || 320;
+    const height = this.container.clientHeight || 280;
+
+    // 1. Scene
+    this.scene = new THREE.Scene();
+
+    // 2. Camera
+    this.camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20.0);
+    this.camera.position.set(0, 0.52, 1.75);
+
+    // 3. Renderer
+    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+    this.renderer.setSize(width, height);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.container.appendChild(this.renderer.domElement);
+
+    // 4. OrbitControls
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.08;
+    this.controls.target.set(0, 0.48, 0);
+    this.controls.minDistance = 0.7;
+    this.controls.maxDistance = 3.2;
+    this.controls.maxPolarAngle = Math.PI * 0.58;
+    this.controls.minPolarAngle = Math.PI * 0.15;
+    this.controls.update();
+
+    // 5. Lights
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1a2634, 1.6);
+    this.scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    dirLight.position.set(1.2, 2.0, 1.8);
+    this.scene.add(dirLight);
+
+    const rimLight = new THREE.DirectionalLight(0x00e5ff, 1.4);
+    rimLight.position.set(-1.5, 1.2, -1.2);
+    this.scene.add(rimLight);
+
+    // 6. Resize Observer
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => this.resize());
+      ro.observe(this.container);
+    }
+    window.addEventListener('resize', () => this.resize());
+
+    this.isInitialized = true;
+    this.loadModel('assets/dog-mascot.vrm');
+    this.start();
+  }
+
+  resize() {
+    if (!this.container || !this.renderer || !this.camera) return;
+    const width = this.container.clientWidth;
+    const height = this.container.clientHeight;
+    if (width > 0 && height > 0) {
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(width, height);
+    }
+  }
+
+  loadModel(url) {
+    if (this.isLoading) return;
+    this.isLoading = true;
+
+    const overlay = document.getElementById('vrm-loading-overlay');
+    if (overlay) overlay.style.opacity = '1';
+
+    const loader = new GLTFLoader();
+    loader.register((parser) => new VRMLoaderPlugin(parser));
+
+    loader.load(
+      url,
+      (gltf) => {
+        const vrm = gltf.userData.vrm;
+        if (!vrm) {
+          console.error('VRM data not found in gltf');
+          return;
+        }
+
+        if (this.currentVrm) {
+          this.scene.remove(this.currentVrm.scene);
+        }
+
+        this.currentVrm = vrm;
+        this.scene.add(vrm.scene);
+
+        // 自然なアイドル立ちポーズの適用
+        this.applyNaturalPose(vrm);
+
+        // 表情の初期化
+        this.setExpression(window.gameState?.vrmExpression || 'happy');
+
+        this.isLoading = false;
+        if (overlay) {
+          overlay.style.opacity = '0';
+          setTimeout(() => { overlay.style.display = 'none'; }, 400);
+        }
+      },
+      (progress) => {},
+      (error) => {
+        console.error('VRM load error:', error);
+        this.isLoading = false;
+        if (overlay) {
+          overlay.innerHTML = '<div style="font-size: 24px;">⚠️</div><div style="font-size: 12px; color: #ff6688; margin-top: 4px;">3Dモデル読込に失敗しました</div>';
+        }
+      }
+    );
+  }
+
+  applyNaturalPose(vrm) {
+    if (!vrm || !vrm.humanoid) return;
+    const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+    const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+    const leftLowerArm = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
+    const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+    const head = vrm.humanoid.getNormalizedBoneNode('head');
+
+    if (leftUpperArm) {
+      leftUpperArm.rotation.set(0.15, 0.1, -1.05);
+    }
+    if (rightUpperArm) {
+      rightUpperArm.rotation.set(0.15, -0.1, 1.05);
+    }
+    if (leftLowerArm) {
+      leftLowerArm.rotation.set(0.2, 0.25, 0.05);
+    }
+    if (rightLowerArm) {
+      rightLowerArm.rotation.set(0.2, -0.25, -0.05);
+    }
+    if (head) {
+      head.rotation.set(-0.02, 0, 0.03);
+    }
+  }
+
+  setExpression(exprName) {
+    this.currentExpression = exprName;
+    if (!this.currentVrm || !this.currentVrm.expressionManager) return;
+    const em = this.currentVrm.expressionManager;
+
+    const presets = ['happy', 'neutral', 'surprised', 'angry', 'relaxed', 'blinkLeft', 'blinkRight', 'aa', 'oh'];
+    presets.forEach(p => em.setValue(p, 0));
+
+    if (exprName === 'wink') {
+      em.setValue('blinkLeft', 1.0);
+      em.setValue('happy', 0.6);
+    } else if (exprName === 'surprised') {
+      em.setValue('surprised', 1.0);
+      em.setValue('oh', 0.4);
+    } else {
+      em.setValue(exprName, 1.0);
+    }
+    em.update();
+  }
+
+  triggerAction(actionName) {
+    if (actionName === 'reset') {
+      if (this.controls) {
+        this.camera.position.set(0, 0.52, 1.75);
+        this.controls.target.set(0, 0.48, 0);
+        this.controls.update();
+      }
+      return;
+    }
+
+    if (actionName === 'bark') {
+      this.actionState = 'bark';
+      this.actionTime = 0;
+      if (window.playSound) window.playSound('click');
+    }
+  }
+
+  start() {
+    if (this.animationFrameId) return;
+    this.clock.start();
+    const animate = () => {
+      this.animationFrameId = requestAnimationFrame(animate);
+      this.update();
+    };
+    animate();
+  }
+
+  stop() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+  }
+
+  update() {
+    const delta = this.clock.getDelta();
+    const elapsed = this.clock.getElapsedTime();
+
+    if (this.controls) {
+      this.controls.update();
+    }
+
+    if (this.currentVrm) {
+      const vrm = this.currentVrm;
+      const em = vrm.expressionManager;
+
+      // 1. 自動まばたき
+      if (this.currentExpression !== 'wink') {
+        this.blinkTimer += delta;
+        if (this.blinkTimer > 3.5) {
+          const blinkProgress = (this.blinkTimer - 3.5) / this.blinkDuration;
+          if (blinkProgress <= 1.0) {
+            const val = Math.sin(blinkProgress * Math.PI);
+            em.setValue('blink', val);
+          } else {
+            em.setValue('blink', 0);
+            this.blinkTimer = Math.random() * 1.5;
+          }
+        }
+      }
+
+      // 2. 待機呼吸モーション
+      const head = vrm.humanoid?.getNormalizedBoneNode('head');
+      const chest = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('spine');
+      const leftUpperArm = vrm.humanoid?.getNormalizedBoneNode('leftUpperArm');
+      const rightUpperArm = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm');
+
+      if (!this.actionState) {
+        const breath = Math.sin(elapsed * 2.2) * 0.02;
+        if (chest) chest.rotation.x = breath * 0.5;
+        if (head) {
+          head.rotation.x = -0.02 + Math.sin(elapsed * 1.8) * 0.015;
+          head.rotation.y = Math.sin(elapsed * 0.8) * 0.04;
+        }
+        if (vrm.scene) {
+          vrm.scene.position.y = Math.sin(elapsed * 2.0) * 0.006;
+        }
+      } else if (this.actionState === 'bark') {
+        // 「ワン！」アクション
+        this.actionTime += delta;
+        const t = this.actionTime;
+        if (t < 0.8) {
+          const hop = Math.sin(t / 0.8 * Math.PI) * 0.08;
+          if (vrm.scene) vrm.scene.position.y = hop;
+          if (head) {
+            head.rotation.x = 0.12 * Math.sin(t * 15);
+            head.rotation.y = 0.15 * Math.sin(t * 12);
+          }
+          if (leftUpperArm) leftUpperArm.rotation.z = -1.05 - Math.sin(t * 15) * 0.35;
+          if (rightUpperArm) rightUpperArm.rotation.z = 1.05 + Math.sin(t * 15) * 0.35;
+          if (em) {
+            em.setValue('aa', Math.abs(Math.sin(t * 12)) * 0.8);
+            em.setValue('happy', 1.0);
+          }
+        } else {
+          this.actionState = null;
+          if (vrm.scene) vrm.scene.position.y = 0;
+          this.applyNaturalPose(vrm);
+          this.setExpression(this.currentExpression);
+        }
+      }
+
+      // 3. VRMのSpringBone（耳やしっぽ等）と表情更新
+      vrm.update(delta);
+    }
+
+    if (this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
+}
+
+window.VrmAvatarManager = new VrmAvatarController();
+</script>
 
 <script>
 /* ==========================================================================
@@ -4765,6 +5152,8 @@ const gameState = {
   pilotAdj: '疾風の',
   pilotNoun: 'ハヤブサ',
   pilotNum: '01号',
+  avatarType: 'vrm', // 'vrm' (3D dog-mascot) or 'classic'
+  vrmExpression: 'happy',
   avatar: { base: 0, hair: 0, suit: 0, accessory: 0 },
   
   // 手書き特訓
@@ -4803,6 +5192,8 @@ function loadUserData() {
   gameState.pilotNoun = pilot.noun || 'ハヤブサ';
   gameState.pilotNum = pilot.num || '01号';
   
+  gameState.avatarType = getStorage('kanji_jet_avatar_type', 'vrm');
+  gameState.vrmExpression = getStorage('kanji_jet_vrm_expr', 'happy');
   gameState.avatar = getStorage('kanji_jet_avatar', { base: 0, hair: 0, suit: 0, accessory: 0 });
   gameState.myGrade = parseInt(getStorage('kanji_jet_my_grade', '1'), 10) || 1;
   gameState.soundEnabled = getStorage('kanji_jet_sound', true);
@@ -4814,17 +5205,51 @@ function loadUserData() {
 
 function updatePilotDisplay() {
   const fullName = `${gameState.pilotAdj}${gameState.pilotNoun}${gameState.pilotNum}`;
+  const isVrm = gameState.avatarType === 'vrm';
+  const prefix = isVrm ? '🐶 ' : '⚡ ';
+
   const elHome = document.getElementById('home-pilot-name');
-  if (elHome) elHome.textContent = fullName;
+  if (elHome) elHome.textContent = `${prefix}${fullName}`;
   
   const elHud = document.getElementById('hud-pilot-badge');
-  if (elHud) elHud.textContent = `⚡ ${fullName}`;
+  if (elHud) elHud.textContent = `${prefix}${fullName}`;
   
   const elModalPrev = document.getElementById('pilot-modal-preview');
   if (elModalPrev) elModalPrev.textContent = fullName;
 
-  renderAvatarSVG('home-avatar-icon', 38);
-  renderAvatarSVG('avatar-full-preview', 130);
+  const elResultPilot = document.getElementById('result-pilot-badge');
+  if (elResultPilot) elResultPilot.textContent = `${prefix}パイロット: ${fullName}`;
+
+  const elBadge = document.getElementById('avatar-preview-badge');
+  if (elBadge) {
+    elBadge.textContent = isVrm ? '🐶 3Dマスコット' : '👤 クラシック';
+    elBadge.style.borderColor = isVrm ? '#00e5ff' : '#ffd700';
+    elBadge.style.color = isVrm ? '#00e5ff' : '#ffd700';
+  }
+
+  const elHomeIcon = document.getElementById('home-avatar-icon');
+  const elFullPrev = document.getElementById('avatar-full-preview');
+
+  if (isVrm) {
+    if (elHomeIcon) {
+      elHomeIcon.innerHTML = `<img src="assets/dog-mascot-icon.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="3Dパイロット">`;
+    }
+    if (elFullPrev) {
+      elFullPrev.style.opacity = '1';
+      elFullPrev.style.filter = 'none';
+      elFullPrev.innerHTML = `
+        <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+          <img src="assets/dog-mascot-icon.png" style="width: 96px; height: 96px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.4)); animation: bounceDog 3s infinite alternate;" alt="dog-mascot">
+        </div>`;
+    }
+  } else {
+    renderAvatarSVG('home-avatar-icon', 38);
+    renderAvatarSVG('avatar-full-preview', 130);
+    if (elFullPrev) {
+      elFullPrev.style.opacity = '1';
+      elFullPrev.style.filter = 'none';
+    }
+  }
 }
 
 function updateHomeStats() {
@@ -7085,6 +7510,7 @@ function openPilotNameModalFromHud() {
 function closeCustomModal() {
   const modal = document.getElementById('custom-modal');
   if (modal) modal.style.display = 'none';
+  if (window.VrmAvatarManager) window.VrmAvatarManager.stop();
   saveCustomization();
   updatePilotDisplay();
   updateHomeStats();
@@ -7102,13 +7528,14 @@ function switchCustomMainTab(tab) {
     if (contentShip) contentShip.style.display = 'block';
     if (contentAvatar) contentAvatar.style.display = 'none';
     renderHangarPreview();
+    if (window.VrmAvatarManager) window.VrmAvatarManager.stop();
   } else {
     if (btnShip) btnShip.classList.remove('active');
     if (btnAvatar) btnAvatar.classList.add('active');
     if (contentShip) contentShip.style.display = 'none';
     if (contentAvatar) contentAvatar.style.display = 'block';
-    // アバター設定はVRMモデル導入準備中のため、二つ名プレビューとデフォルト表示のみ初期化
-    renderAvatarSVG('avatar-full-preview', 130);
+    
+    initAvatarSettingsUI();
     updatePilotModalPreview();
   }
 }
@@ -7259,6 +7686,8 @@ function saveCustomization() {
   setStorage('kanji_jet_custom', { ship: gameState.shipId, laser: gameState.laserId });
   setStorage('kanji_jet_pilot', { adj: gameState.pilotAdj, noun: gameState.pilotNoun, num: gameState.pilotNum });
   setStorage('kanji_jet_avatar', gameState.avatar);
+  setStorage('kanji_jet_avatar_type', gameState.avatarType);
+  setStorage('kanji_jet_vrm_expr', gameState.vrmExpression);
 }
 
 function renderHangarPreview() {
@@ -7306,20 +7735,79 @@ function renderHangarPreview() {
 }
 
 // --------------------------------------------------------------------------
-// アバター福笑いシステム
-// ==========================================================================
-// VRM 3Dアバターシステム拡張準備 (現在「準備中・・・」)
-// 将来的に @pixiv/three-vrm および Three.js を用いてVRMモデルをレンダリング予定
+// 3D VRM ＆ クラシック アバターシステム
 // ==========================================================================
 const VRM_AVATAR_CONFIG = {
-  status: 'maintenance', // 'maintenance' (準備中)
-  message: 'アバター設定：準備中・・・（VRMモデル採用準備中）',
-  modelUrl: null, // VRMモデルファイルのパス (例: 'assets/pilot.vrm')
-  isReady: false
+  status: 'active',
+  modelName: 'dog-mascot',
+  modelUrl: 'assets/dog-mascot.vrm',
+  thumbnailUrl: 'assets/dog-mascot-icon.png',
+  author: 'fumiyan',
+  isReady: true
 };
 
+function selectAvatarType(type) {
+  gameState.avatarType = type;
+  const isVrm = type === 'vrm';
+  
+  const btnVrm = document.getElementById('btn-type-vrm');
+  const btnClassic = document.getElementById('btn-type-classic');
+  const panelVrm = document.getElementById('vrm-avatar-panel');
+  const panelClassic = document.getElementById('legacy-avatar-parts-wrapper');
+
+  if (btnVrm) btnVrm.classList.toggle('active', isVrm);
+  if (btnClassic) btnClassic.classList.toggle('active', !isVrm);
+
+  if (panelVrm) panelVrm.style.display = isVrm ? 'flex' : 'none';
+  if (panelClassic) panelClassic.style.display = !isVrm ? 'block' : 'none';
+
+  if (isVrm) {
+    if (window.VrmAvatarManager) {
+      window.VrmAvatarManager.init('vrm-viewer-container');
+      window.VrmAvatarManager.resize();
+      window.VrmAvatarManager.start();
+    }
+  } else {
+    if (window.VrmAvatarManager) window.VrmAvatarManager.stop();
+    renderAvatarCategoryOptions();
+  }
+
+  updatePilotDisplay();
+  if (window.playSound) playSound('click');
+}
+
+function setAvatarExpression(expr) {
+  gameState.vrmExpression = expr;
+  const exprs = ['happy', 'neutral', 'surprised', 'angry', 'wink'];
+  exprs.forEach(e => {
+    const btn = document.getElementById(`expr-btn-${e}`);
+    if (btn) btn.classList.toggle('active', e === expr);
+  });
+
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.setExpression(expr);
+  }
+  if (window.playSound) playSound('click');
+}
+
+function triggerVrmAction(action) {
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.triggerAction(action);
+  }
+}
+
+function initAvatarSettingsUI() {
+  selectAvatarType(gameState.avatarType || 'vrm');
+  setAvatarExpression(gameState.vrmExpression || 'happy');
+  setTimeout(() => {
+    if (window.VrmAvatarManager) {
+      window.VrmAvatarManager.resize();
+    }
+  }, 60);
+}
+
 // --------------------------------------------------------------------------
-// アバターシステム（VRM準備中のため編集機能は一時停止中）
+// クラシック2Dアバターシステム
 // --------------------------------------------------------------------------
 let currentAvatarCat = 'base';
 
@@ -7386,9 +7874,8 @@ function renderAvatarCategoryOptions() {
     card.addEventListener('click', () => {
       gameState.avatar[catKey] = p.id;
       renderAvatarCategoryOptions();
-      renderAvatarSVG('avatar-full-preview', 130);
-      renderAvatarSVG('home-avatar-icon', 38);
-      playSound('click');
+      updatePilotDisplay();
+      if (window.playSound) playSound('click');
     });
     grid.appendChild(card);
   });
