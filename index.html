@@ -1758,6 +1758,82 @@
       }
     }
 
+    /* アバター設定 準備中スタイル (VRMモデル導入準備) */
+    .avatar-prep-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: bold;
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 4px;
+      letter-spacing: 0.5px;
+      vertical-align: middle;
+    }
+    .avatar-maintenance-container {
+      background: linear-gradient(135deg, rgba(8, 20, 42, 0.85) 0%, rgba(13, 30, 60, 0.7) 100%);
+      border: 1.5px dashed rgba(0, 229, 255, 0.4);
+      border-radius: 14px;
+      padding: 26px 18px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+      position: relative;
+      overflow: hidden;
+    }
+    .avatar-maintenance-icon {
+      font-size: 44px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.6));
+      animation: floatAvatarIcon 3s ease-in-out infinite alternate;
+    }
+    @keyframes floatAvatarIcon {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(-6px); }
+    }
+    .avatar-maintenance-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .avatar-maintenance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid var(--primary-cyan);
+      color: var(--primary-cyan);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+    .avatar-maintenance-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.6;
+      max-width: 400px;
+      margin-bottom: 14px;
+    }
+    .avatar-maintenance-note {
+      font-size: 11.5px;
+      color: #00ff88;
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      padding: 6px 14px;
+      border-radius: 8px;
+    }
+
     /* === 提案2: 漢字ミュージアム 大タブナビゲーション === */
     .museum-tab-nav {
       display: flex;
@@ -4035,7 +4111,7 @@
       <!-- 切り替えタブ -->
       <div class="custom-tab-buttons" style="padding: 0 16px;">
         <button class="custom-tab-btn" id="btn-tab-avatar" onclick="switchCustomMainTab('pilot')">
-          🧑🚀 パイロット設定 (アバター＆二つ名)
+          🧑🚀 パイロット設定 (アバター＆二つ名) <span class="avatar-prep-badge">準備中・・・</span>
         </button>
         <button class="custom-tab-btn active" id="btn-tab-ship" onclick="switchCustomMainTab('ship')">
           ✈️ ジェット機＆ビーム
@@ -4066,14 +4142,17 @@
           </div>
         </div>
 
-        <!-- 2. パイロット設定 タブコンテンツ（アバター福笑い ＋ 二つ名コードネーム） -->
+        <!-- 2. パイロット設定 タブコンテンツ（アバター設定はVRM準備中・二つ名コードネーム） -->
         <div id="custom-tab-content-avatar" style="display: none;">
           <div class="hangar-pilot-section">
             <!-- 左側: アバタープレビュー ＆ 二つ名スロット -->
             <div style="background: rgba(10, 20, 42, 0.7); border: 1.5px solid rgba(0, 229, 255, 0.3); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-              <div class="avatar-preview-container" style="padding: 0; background: none; border: none; box-shadow: none;">
-                <div id="avatar-full-preview" style="width: 130px; height: 130px; display: flex; align-items: center; justify-content: center;">
+              <div class="avatar-preview-container" style="padding: 0; background: none; border: none; box-shadow: none; position: relative;">
+                <div id="avatar-full-preview" style="width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; opacity: 0.6; filter: grayscale(25%);">
                   <!-- SVGレンダリング -->
+                </div>
+                <div style="position: absolute; bottom: 4px; background: rgba(5, 12, 24, 0.9); border: 1px solid #ffd700; color: #ffd700; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(0,0,0,0.6);">
+                  アバター: 準備中・・・
                 </div>
               </div>
 
@@ -4111,22 +4190,32 @@
               </div>
             </div>
 
-            <!-- 右側: アバターパーツ選択 -->
-            <div>
-              <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px; text-align: left;">
-                パーツを組み合わせて自分だけのパイロットを作ろう！（適正学年・にがて克服でアンロック）
-              </div>
-              <!-- アバターパーツカテゴリー切り替え -->
-              <div class="avatar-category-nav" style="margin-bottom: 8px;">
-                <button class="avatar-cat-btn active" id="cat-btn-base" onclick="switchAvatarCategory('base')">👤 かお・はだ</button>
-                <button class="avatar-cat-btn" id="cat-btn-hair" onclick="switchAvatarCategory('hair')">💇 かみがた</button>
-                <button class="avatar-cat-btn" id="cat-btn-suit" onclick="switchAvatarCategory('suit')">🥋 スーツ</button>
-                <button class="avatar-cat-btn" id="cat-btn-acc" onclick="switchAvatarCategory('accessory')">✨ そうしょく</button>
+            <!-- 右側: アバター設定 準備中パネル -->
+            <div style="flex: 1; display: flex; flex-direction: column;">
+              <div class="avatar-maintenance-container">
+                <div class="avatar-maintenance-icon">🕶️</div>
+                <div class="avatar-maintenance-title">アバター設定：準備中・・・</div>
+                <div class="avatar-maintenance-badge">🚀 3Dアバター (VRMモデル) アップデート準備中</div>
+                <div class="avatar-maintenance-desc">
+                  より迫力ある3Dパイロット（VRMモデル）で宇宙へ出撃できるよう、現在新システムを準備中です。<br>
+                  公開まで楽しみにお待ちください！
+                </div>
+                <div class="avatar-maintenance-note">
+                  💡 左側の「二つ名（コードネーム）」は引き続き自由にカスタマイズ可能です！
+                </div>
               </div>
 
-              <!-- パーツ選択グリッド -->
-              <div class="avatar-parts-grid" id="avatar-parts-grid" style="max-height: 440px; overflow-y: auto;">
-                <!-- JS動的生成 -->
+              <!-- 既存のアバターパーツ選択（将来のVRMモデルUI連携用に非表示で保持） -->
+              <div id="legacy-avatar-parts-wrapper" style="display: none;">
+                <div class="avatar-category-nav" style="margin-bottom: 8px;">
+                  <button class="avatar-cat-btn active" id="cat-btn-base" onclick="switchAvatarCategory('base')">👤 かお・はだ</button>
+                  <button class="avatar-cat-btn" id="cat-btn-hair" onclick="switchAvatarCategory('hair')">💇 かみがた</button>
+                  <button class="avatar-cat-btn" id="cat-btn-suit" onclick="switchAvatarCategory('suit')">🥋 スーツ</button>
+                  <button class="avatar-cat-btn" id="cat-btn-acc" onclick="switchAvatarCategory('accessory')">✨ そうしょく</button>
+                </div>
+                <div class="avatar-parts-grid" id="avatar-parts-grid" style="max-height: 440px; overflow-y: auto;">
+                  <!-- JS動的生成 -->
+                </div>
               </div>
             </div>
           </div>
@@ -7018,8 +7107,9 @@ function switchCustomMainTab(tab) {
     if (btnAvatar) btnAvatar.classList.add('active');
     if (contentShip) contentShip.style.display = 'none';
     if (contentAvatar) contentAvatar.style.display = 'block';
-    renderAvatarCategoryOptions();
+    // アバター設定はVRMモデル導入準備中のため、二つ名プレビューとデフォルト表示のみ初期化
     renderAvatarSVG('avatar-full-preview', 130);
+    updatePilotModalPreview();
   }
 }
 
@@ -7217,6 +7307,19 @@ function renderHangarPreview() {
 
 // --------------------------------------------------------------------------
 // アバター福笑いシステム
+// ==========================================================================
+// VRM 3Dアバターシステム拡張準備 (現在「準備中・・・」)
+// 将来的に @pixiv/three-vrm および Three.js を用いてVRMモデルをレンダリング予定
+// ==========================================================================
+const VRM_AVATAR_CONFIG = {
+  status: 'maintenance', // 'maintenance' (準備中)
+  message: 'アバター設定：準備中・・・（VRMモデル採用準備中）',
+  modelUrl: null, // VRMモデルファイルのパス (例: 'assets/pilot.vrm')
+  isReady: false
+};
+
+// --------------------------------------------------------------------------
+// アバターシステム（VRM準備中のため編集機能は一時停止中）
 // --------------------------------------------------------------------------
 let currentAvatarCat = 'base';
 
