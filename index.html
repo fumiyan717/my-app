@@ -1868,6 +1868,72 @@
       0% { transform: translateY(0) scale(1); }
       100% { transform: translateY(-8px) scale(1.08); }
     }
+    @keyframes bounceRobot {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-7px) scale(1.04); }
+    }
+    .costume-sub-tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .costume-sub-tab-btn {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      font-weight: bold;
+      border: 1.5px solid rgba(0, 229, 255, 0.3);
+      border-radius: 8px;
+      background: rgba(10, 25, 50, 0.7);
+      color: #8cb0d0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .costume-sub-tab-btn:hover {
+      border-color: #00e5ff;
+      color: #fff;
+    }
+    .costume-sub-tab-btn.active {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(0, 150, 255, 0.35));
+      border-color: #00e5ff;
+      color: #00ffff;
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+    }
+    .costume-item-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .costume-item-card {
+      background: rgba(15, 30, 60, 0.75);
+      border: 1.5px solid rgba(0, 229, 255, 0.25);
+      border-radius: 10px;
+      padding: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .costume-item-card:hover {
+      border-color: #00e5ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 229, 255, 0.25);
+    }
+    .costume-item-card.active {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(255, 215, 0, 0.15));
+      border-color: #ffd700;
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    }
 
     /* === 提案2: 漢字ミュージアム 大タブナビゲーション === */
     .museum-tab-nav {
@@ -4236,20 +4302,50 @@
               </div>
             </div>
 
-            <!-- 右側: アバター設定パネル（3D VRM ＆ クラシック） -->
+            <!-- 右側: アバター設定パネル（3D ネコ ＆ 3D ロボット ＆ きせかえ） -->
             <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
               <!-- アバタータイプ切り替えバー -->
               <div class="avatar-type-bar">
                 <button class="avatar-type-btn active" id="btn-type-vrm" onclick="selectAvatarType('vrm')">
-                  🐱 3D ネコ・パイロット
+                  🐱 ネコマスコット
                 </button>
-                <button class="avatar-type-btn" id="btn-type-costume" onclick="onCostumePrepClick()" style="opacity: 0.85;">
-                  👗 きせかえ <span class="avatar-prep-badge" style="background: rgba(255,215,0,0.15); color: #ffd700; border-color: rgba(255,215,0,0.4); font-size: 10px; padding: 1px 6px; margin-left: 6px;">準備中</span>
+                <button class="avatar-type-btn" id="btn-type-robot" onclick="selectAvatarType('robot')">
+                  🤖 サイバーロボ
+                </button>
+                <button class="avatar-type-btn" id="btn-type-costume" onclick="selectAvatarType('costume')">
+                  👗 きせかえ
                 </button>
               </div>
 
-              <!-- 1. 3D VRMモデル (neko-mascot  men.vrm / neko-mascot women.vrm) 設定パネル -->
-              <div id="vrm-avatar-panel" style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- 共通 3D ビューポート（全身が美しく収まる320px） -->
+              <div id="vrm-viewer-container" style="position: relative; width: 100%; height: 320px; min-height: 300px; background: radial-gradient(circle at 50% 50%, rgba(13, 30, 60, 0.9) 0%, rgba(5, 12, 25, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.18);">
+                <div id="vrm-loading-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(10, 25, 50, 0.95) 0%, rgba(5, 12, 25, 0.98) 100%); z-index: 10; transition: opacity 0.3s ease;">
+                  <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
+                    <img id="vrm-loading-img" src="assets/neko-men-icon.png" style="width: 76px; height: 76px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.6)); animation: bounceNeko 1.2s infinite alternate;" alt="avatar-loading">
+                  </div>
+                  <div id="vrm-loading-text" style="font-size: 13px; color: #00e5ff; font-weight: bold; margin-top: 8px;">🐱 3D パイロット 読込中...</div>
+                  <div style="width: 180px; height: 6px; background: rgba(255,255,255,0.12); border-radius: 3px; margin-top: 7px; overflow: hidden; border: 1px solid rgba(0,229,255,0.3);">
+                    <div id="vrm-loading-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00e5ff, #ffd700); transition: width 0.2s ease;"></div>
+                  </div>
+                  <div id="vrm-loading-progress" style="font-size: 11px; color: #ffd700; margin-top: 5px; font-weight: bold;"></div>
+                </div>
+                <!-- 操作ヒント -->
+                <div style="position: absolute; top: 8px; right: 10px; background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 6px; font-size: 10px; color: #8cb0d0; pointer-events: none; border: 1px solid rgba(255,255,255,0.1); z-index: 5;">
+                  🖱️ ドラッグで360°回転 / ホイールでズーム
+                </div>
+                <!-- アクションボタン（ビューポート内） -->
+                <div style="position: absolute; bottom: 8px; right: 10px; display: flex; gap: 6px; z-index: 5;" id="viewport-action-buttons">
+                  <button class="action-sub-btn" id="btn-action-main" onclick="triggerCurrentAction()" style="padding: 5px 12px; font-size: 11.5px; background: rgba(255, 215, 0, 0.2); border-color: #ffd700; color: #ffd700; font-weight: bold;" title="アクション">
+                    🐾 ニャー！とごあいさつ
+                  </button>
+                  <button class="action-sub-btn" onclick="triggerVrmAction('reset')" style="padding: 5px 10px; font-size: 11.5px;" title="正面に向きを戻す">
+                    🔄 正面
+                  </button>
+                </div>
+              </div>
+
+              <!-- 1. ネコマスコット設定パネル -->
+              <div id="vrm-avatar-panel" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
                 <!-- モデル選択バー（Men / Women 切り替え） -->
                 <div style="display: flex; gap: 8px;">
                   <button class="vrm-model-btn active" id="btn-vrm-men" onclick="switchVrmModel('men')" title="neko-mascot  men.vrm を選択">
@@ -4258,33 +4354,6 @@
                   <button class="vrm-model-btn" id="btn-vrm-women" onclick="switchVrmModel('women')" title="neko-mascot women.vrm を選択">
                     👧 ネコ (Women)
                   </button>
-                </div>
-
-                <!-- 3D ビューポート（全身が美しく収まる320px） -->
-                <div id="vrm-viewer-container" style="position: relative; width: 100%; height: 320px; min-height: 300px; background: radial-gradient(circle at 50% 50%, rgba(13, 30, 60, 0.9) 0%, rgba(5, 12, 25, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.18);">
-                  <div id="vrm-loading-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(10, 25, 50, 0.95) 0%, rgba(5, 12, 25, 0.98) 100%); z-index: 10; transition: opacity 0.3s ease;">
-                    <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
-                      <img id="vrm-loading-img" src="assets/neko-men-icon.png" style="width: 76px; height: 76px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.6)); animation: bounceNeko 1.2s infinite alternate;" alt="neko-mascot">
-                    </div>
-                    <div id="vrm-loading-text" style="font-size: 13px; color: #00e5ff; font-weight: bold; margin-top: 8px;">🐱 3D ネコ・マスコット 読込中...</div>
-                    <div style="width: 180px; height: 6px; background: rgba(255,255,255,0.12); border-radius: 3px; margin-top: 7px; overflow: hidden; border: 1px solid rgba(0,229,255,0.3);">
-                      <div id="vrm-loading-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00e5ff, #ffd700); transition: width 0.2s ease;"></div>
-                    </div>
-                    <div id="vrm-loading-progress" style="font-size: 11px; color: #ffd700; margin-top: 5px; font-weight: bold;"></div>
-                  </div>
-                  <!-- 操作ヒント -->
-                  <div style="position: absolute; top: 8px; right: 10px; background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 6px; font-size: 10px; color: #8cb0d0; pointer-events: none; border: 1px solid rgba(255,255,255,0.1); z-index: 5;">
-                    🖱️ ドラッグで360°回転 / ホイールでズーム
-                  </div>
-                  <!-- アクションボタン（ビューポート内） -->
-                  <div style="position: absolute; bottom: 8px; right: 10px; display: flex; gap: 6px; z-index: 5;">
-                    <button class="action-sub-btn" onclick="triggerVrmAction('meow')" style="padding: 5px 12px; font-size: 11.5px; background: rgba(255, 215, 0, 0.2); border-color: #ffd700; color: #ffd700; font-weight: bold;" title="元気にニャー！とあいさつ">
-                      🐾 ニャー！とごあいさつ
-                    </button>
-                    <button class="action-sub-btn" onclick="triggerVrmAction('reset')" style="padding: 5px 10px; font-size: 11.5px;" title="正面に向きを戻す">
-                      🔄 正面
-                    </button>
-                  </div>
                 </div>
 
                 <!-- 表情コントロール -->
@@ -4324,16 +4393,73 @@
                 </div>
               </div>
 
-              <!-- 2. 既存のクラシックアバターパーツ選択 -->
-              <div id="legacy-avatar-parts-wrapper" style="display: none;">
-                <div class="avatar-category-nav" style="margin-bottom: 8px;">
-                  <button class="avatar-cat-btn active" id="cat-btn-base" onclick="switchAvatarCategory('base')">👤 かお・はだ</button>
-                  <button class="avatar-cat-btn" id="cat-btn-hair" onclick="switchAvatarCategory('hair')">💇 かみがた</button>
-                  <button class="avatar-cat-btn" id="cat-btn-suit" onclick="switchAvatarCategory('suit')">🥋 スーツ</button>
-                  <button class="avatar-cat-btn" id="cat-btn-acc" onclick="switchAvatarCategory('accessory')">✨ そうしょく</button>
+              <!-- 2. ロボット設定パネル -->
+              <div id="robot-avatar-panel" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <!-- 胸モニター（コアディスプレイ）コントロール -->
+                <div style="background: rgba(10, 20, 42, 0.7); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 10px; padding: 10px 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="font-size: 11.5px; color: #00e5ff; font-weight: bold; letter-spacing: 0.5px;">📟 コアディスプレイ（胸モニター）</div>
+                    <div style="font-size: 10.5px; color: #ffd700;">✨ リアルタイムプロシージャル発光</div>
+                  </div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="robot-chest-buttons">
+                    <!-- JS動的生成 -->
+                  </div>
                 </div>
-                <div class="avatar-parts-grid" id="avatar-parts-grid" style="max-height: 380px; overflow-y: auto;">
-                  <!-- JS動的生成 -->
+
+                <!-- 発光カラー・バイザー設定 -->
+                <div style="background: rgba(10, 20, 42, 0.7); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 10px; padding: 10px 12px;">
+                  <div style="font-size: 11.5px; color: #00e5ff; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 8px;">💡 バイザー＆ネオン発光カラー</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="robot-color-buttons">
+                    <!-- JS動的生成 -->
+                  </div>
+                </div>
+
+                <!-- パイロットステータスカード -->
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #8cb0d0;">
+                  <div>
+                    <span style="color: #fff; font-weight: bold;">🤖 機長パイロット:</span> Cyber Robot-01
+                    <span style="margin-left: 8px; color: #00ff88; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0,255,136,0.3); padding: 1px 6px; border-radius: 4px;">Procedural 3D</span>
+                  </div>
+                  <div style="color: #64748b;">
+                    Type: Cybernetic Jet Pilot
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. きせかえパネル（ネコ用とロボット用を完全分離） -->
+              <div id="costume-avatar-panel" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <!-- サブタブ：ネコ用きせかえ / ロボット用きせかえ -->
+                <div class="costume-sub-tab-bar">
+                  <button class="costume-sub-tab-btn active" id="btn-costume-cat" onclick="switchCostumeSubTab('cat')">
+                    🐱 ネコ用きせかえ
+                  </button>
+                  <button class="costume-sub-tab-btn" id="btn-costume-robot" onclick="switchCostumeSubTab('robot')">
+                    🤖 ロボット用きせかえ
+                  </button>
+                </div>
+
+                <!-- ネコ用きせかえコンテンツ -->
+                <div id="costume-sub-content-cat">
+                  <div class="avatar-category-nav" style="margin-bottom: 8px;">
+                    <button class="avatar-cat-btn active" id="cat-costume-cat-acc" onclick="switchCatCostumeCat('accessory')">✨ そうしょく</button>
+                    <button class="avatar-cat-btn" id="cat-costume-cat-aura" onclick="switchCatCostumeCat('aura')">🌟 オーラ・光彩</button>
+                  </div>
+                  <div class="costume-item-grid" id="cat-costume-items-grid">
+                    <!-- JS動的生成 -->
+                  </div>
+                </div>
+
+                <!-- ロボット用きせかえコンテンツ -->
+                <div id="costume-sub-content-robot" style="display: none;">
+                  <div class="avatar-category-nav" style="margin-bottom: 8px;">
+                    <button class="avatar-cat-btn active" id="robot-costume-cat-chest" onclick="switchRobotCostumeCat('chest')">📟 胸モニター</button>
+                    <button class="avatar-cat-btn" id="robot-costume-cat-color" onclick="switchRobotCostumeCat('color')">💡 ネオンカラー</button>
+                    <button class="avatar-cat-btn" id="robot-costume-cat-head" onclick="switchRobotCostumeCat('head')">📡 アンテナ装飾</button>
+                    <button class="avatar-cat-btn" id="robot-costume-cat-aura" onclick="switchRobotCostumeCat('aura')">⚡ スラスターオーラ</button>
+                  </div>
+                  <div class="costume-item-grid" id="robot-costume-items-grid">
+                    <!-- JS動的生成 -->
+                  </div>
                 </div>
               </div>
             </div>
@@ -4574,6 +4700,58 @@ export const VRM_MODELS_DATA = {
 };
 window.VRM_MODELS_DATA = VRM_MODELS_DATA;
 
+// 🐱 ネコ用きせかえデータ
+export const CAT_COSTUMES_DATA = {
+  accessory: [
+    { id: 'none', name: 'なし', icon: '✕', desc: 'アクセサリーなし' },
+    { id: 'ribbon', name: 'プリティリボン', icon: '🎀', desc: '首元を飾る赤いキュートなリボン' },
+    { id: 'bell', name: 'ゴールドベル', icon: '🔔', desc: 'チリンと鳴る黄金の鈴チョーカー' },
+    { id: 'goggles', name: 'パイロットゴーグル', icon: '🥽', desc: '宇宙飛行用の耐熱耐圧ゴーグル' },
+    { id: 'cap', name: 'キャプテンハット', icon: '🧢', desc: '機長専用のネイビーキャップ' }
+  ],
+  aura: [
+    { id: 'none', name: 'なし', icon: '—', desc: 'オーラなし' },
+    { id: 'stars', name: 'スターダスト', icon: '✨', desc: '星屑がきらめく宇宙の光彩' },
+    { id: 'paw', name: 'にくきゅうオーラ', icon: '🐾', desc: '愛らしいピンクの足あとオーラ' },
+    { id: 'neon', name: 'サイバーリング', icon: '⚡', desc: '青く発光するパルスリング' },
+    { id: 'sakura', name: 'さくらふぶき', icon: '🌸', desc: '舞い散る雅な桜のエフェクト' }
+  ]
+};
+window.CAT_COSTUMES_DATA = CAT_COSTUMES_DATA;
+
+// 🤖 ロボット用きせかえデータ
+export const ROBOT_COSTUMES_DATA = {
+  chest: [
+    { id: 'smile', name: 'スマイル', icon: '😊', desc: 'にこにこ笑顔のコアフェイス' },
+    { id: 'kanji_tobu', name: '漢字「飛」', icon: '飛', desc: '大空・宇宙を翔けるフライトモード' },
+    { id: 'kanji_hikari', name: '漢字「光」', icon: '光', desc: '高出力レーザーエネルギー充填' },
+    { id: 'kanji_kakeru', name: '漢字「翔」', icon: '翔', desc: '超光速ワープドライブ発動' },
+    { id: 'pulse', name: '電光パルス', icon: '⚡', desc: '鼓動するサイバー電光ライン' },
+    { id: 'heart', name: 'ハートビート', icon: '💖', desc: '温かいロボットのこころ' }
+  ],
+  color: [
+    { id: 'cyan', name: 'シアンブルー', color: '#00e5ff', icon: '🩵', desc: '標準のコバルトサイバー発光' },
+    { id: 'green', name: 'エメラルド', color: '#00ff88', icon: '💚', desc: '自然と調和するバイオネオン' },
+    { id: 'orange', name: 'フレイム', color: '#ff7700', icon: '🧡', desc: '燃える熱血のブースターカラー' },
+    { id: 'pink', name: 'ネオンピンク', color: '#ff22aa', icon: '🩷', desc: '華やかなプラズマピンク' },
+    { id: 'gold', name: 'ゴールド', color: '#ffd700', icon: '💛', desc: '輝くレジェンダリーゴールド' }
+  ],
+  head: [
+    { id: 'none', name: '標準アンテナ', icon: '📡', desc: '標準装備のツインアンテナ' },
+    { id: 'satellite', name: '衛星ディッシュ', icon: '🛰️', desc: '超長距離通信パラボラ' },
+    { id: 'crown', name: 'キングクラウン', icon: '👑', desc: '王者の風格漂うゴールデンクラウン' },
+    { id: 'visor', name: 'サイバーバイザー', icon: '🥽', desc: '拡張現実HUDバイザー' },
+    { id: 'halo', name: 'ネオンリング', icon: '🌟', desc: '頭上に浮かぶ光の輪' }
+  ],
+  aura: [
+    { id: 'none', name: 'なし', icon: '—', desc: 'エフェクトなし' },
+    { id: 'plasma', name: 'プラズマ放電', icon: '⚡', desc: '全身から放たれる青白い電撃' },
+    { id: 'thruster', name: 'スラスタージェット', icon: '🛸', desc: '足元から噴き出す推進ジェット' },
+    { id: 'cosmos', name: 'コスモダスト', icon: '🌌', desc: '銀河の星々をまとうオーラ' }
+  ]
+};
+window.ROBOT_COSTUMES_DATA = ROBOT_COSTUMES_DATA;
+
 class VrmAvatarController {
   constructor() {
     this.container = null;
@@ -4586,11 +4764,28 @@ class VrmAvatarController {
     this.animationFrameId = null;
     this.isInitialized = false;
     
-    // モデル管理
+    // 表示モード ('vrm' or 'robot')
+    this.currentAvatarMode = 'vrm';
+
+    // VRMモデル管理
     this.currentModelId = 'men';
     this.loadedVrms = { men: null, women: null };
     this.loadingStates = { men: false, women: false };
     this.currentExpression = 'happy';
+
+    // ロボットプロシージャルアニメーション管理
+    this.robotGroup = null;
+    this.robotMesh = null;
+    this.chestCanvas = null;
+    this.chestCtx = null;
+    this.chestTexture = null;
+    this.chestMesh = null;
+    this.shadowMesh = null;
+    this.robotAuraParticles = null;
+    this.robotLight = null;
+    this.isRobotInitialized = false;
+    this.currentRobotChest = 'smile';
+    this.currentRobotColor = 'cyan';
     
     // 自動まばたき
     this.blinkTimer = 0;
@@ -4614,8 +4809,8 @@ class VrmAvatarController {
     }
     this.loadingStates[modelId] = true;
 
-    // ローディング表示（現在選択中のモデルの場合）
-    if (this.currentModelId === modelId) {
+    // ローディング表示（現在VRMモードかつ選択中のモデルの場合）
+    if (this.currentAvatarMode === 'vrm' && this.currentModelId === modelId) {
       this.showLoadingOverlay(true, modelInfo);
     }
 
@@ -4647,7 +4842,6 @@ class VrmAvatarController {
             console.warn('VRM optimization warning:', optErr);
           }
 
-          // メッシュのカメラ外判定による非表示バグを防止
           vrm.scene.traverse((obj) => {
             if (obj.isMesh) {
               obj.frustumCulled = false;
@@ -4662,8 +4856,7 @@ class VrmAvatarController {
           // 自然なアイドル立ちポーズの初期化
           this.applyNaturalPose(vrm);
 
-          // 現在選択中のモデルであれば即座にシーンにアタッチ
-          if (this.currentModelId === modelId) {
+          if (this.currentAvatarMode === 'vrm' && this.currentModelId === modelId) {
             this.updateOverlayProgress(100, modelInfo.sizeMb, modelInfo.sizeMb);
             if (this.scene) {
               this.attachVrmToScene(vrm, modelId);
@@ -4674,7 +4867,7 @@ class VrmAvatarController {
           resolve(vrm);
         },
         (progress) => {
-          if (this.currentModelId !== modelId) return;
+          if (this.currentAvatarMode !== 'vrm' || this.currentModelId !== modelId) return;
           let loadedMb = 0;
           let totalMb = parseFloat(modelInfo.sizeMb);
           let percent = 0;
@@ -4693,7 +4886,7 @@ class VrmAvatarController {
         (error) => {
           console.error(`VRM load error for ${modelId}:`, error);
           this.loadingStates[modelId] = false;
-          if (this.currentModelId === modelId) {
+          if (this.currentAvatarMode === 'vrm' && this.currentModelId === modelId) {
             this.showLoadingError(error?.message || '3Dモデル読込に失敗しました');
           }
           reject(error);
@@ -4708,22 +4901,253 @@ class VrmAvatarController {
     this.loadModel(initModel);
   }
 
+  // 🤖 ロボットの初期化（Three.jsプロシージャルメッシュ＆動的Canvas）
+  initRobot() {
+    if (this.isRobotInitialized || !this.scene) return;
+    this.robotGroup = new THREE.Group();
+    this.robotGroup.name = 'CyberRobotGroup';
+
+    // 1. ロボット本体テクスチャ
+    const texLoader = new THREE.TextureLoader();
+    texLoader.load('assets/robot.png', (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const w = 1.35;
+      const h = 1.875; // 1080:1500 アスペクト比
+      const geo = new THREE.PlaneGeometry(w, h);
+      const mat = new THREE.MeshStandardMaterial({
+        map: texture,
+        transparent: true,
+        alphaTest: 0.02,
+        roughness: 0.35,
+        metalness: 0.2,
+        side: THREE.DoubleSide
+      });
+      this.robotMesh = new THREE.Mesh(geo, mat);
+      this.robotMesh.position.set(0, h / 2, 0);
+      this.robotGroup.add(this.robotMesh);
+
+      // 2. 胸モニター（コアディスプレイ）用 Dynamic CanvasTexture
+      this.chestCanvas = document.createElement('canvas');
+      this.chestCanvas.width = 128;
+      this.chestCanvas.height = 128;
+      this.chestCtx = this.chestCanvas.getContext('2d');
+      this.chestTexture = new THREE.CanvasTexture(this.chestCanvas);
+      this.chestTexture.colorSpace = THREE.SRGBColorSpace;
+
+      const chestGeo = new THREE.PlaneGeometry(0.36, 0.34);
+      const chestMat = new THREE.MeshBasicMaterial({
+        map: this.chestTexture,
+        transparent: true,
+        side: THREE.DoubleSide
+      });
+      this.chestMesh = new THREE.Mesh(chestGeo, chestMat);
+      // ロボットの胸モニター位置（ローカル座標）
+      this.chestMesh.position.set(-0.04, 0.79, 0.02);
+      this.robotGroup.add(this.chestMesh);
+
+      // 初期胸モニター描画
+      this.drawChestScreen(this.currentRobotChest, this.getRobotColorHex(this.currentRobotColor));
+
+      // 3. 地面ホバリングシャドウ
+      const shadowGeo = new THREE.PlaneGeometry(0.9, 0.45);
+      const shadowCanvas = document.createElement('canvas');
+      shadowCanvas.width = 128;
+      shadowCanvas.height = 128;
+      const sCtx = shadowCanvas.getContext('2d');
+      const grad = sCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grad.addColorStop(0, 'rgba(0, 229, 255, 0.45)');
+      grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.35)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      sCtx.fillStyle = grad;
+      sCtx.fillRect(0, 0, 128, 128);
+      const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+      const shadowMat = new THREE.MeshBasicMaterial({
+        map: shadowTex,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide
+      });
+      this.shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+      this.shadowMesh.rotation.x = -Math.PI / 2;
+      this.shadowMesh.position.set(0, 0.01, 0);
+      this.robotGroup.add(this.shadowMesh);
+
+      // 4. ネオンポイントライト（ロボットの目の前で光る）
+      this.robotLight = new THREE.PointLight(0x00e5ff, 1.8, 4.0);
+      this.robotLight.position.set(0, 1.1, 0.8);
+      this.robotGroup.add(this.robotLight);
+
+      this.isRobotInitialized = true;
+
+      // 初期モードがロボットなら即座に表示
+      if (this.currentAvatarMode === 'robot') {
+        this.robotGroup.visible = true;
+        this.adjustCameraForRobot();
+      } else {
+        this.robotGroup.visible = false;
+      }
+    });
+
+    this.scene.add(this.robotGroup);
+  }
+
+  // 胸モニターのリアルタイム描画
+  drawChestScreen(patternId = 'smile', colorHex = '#00e5ff') {
+    if (!this.chestCtx) return;
+    const ctx = this.chestCtx;
+    const w = 128;
+    const h = 128;
+    ctx.clearRect(0, 0, w, h);
+
+    // 背景（サイバーダーク＋薄いネオングロー）
+    ctx.fillStyle = '#06101e';
+    ctx.beginPath();
+    ctx.roundRect(4, 4, w - 8, h - 8, 12);
+    ctx.fill();
+
+    // 枠線
+    ctx.strokeStyle = colorHex;
+    ctx.lineWidth = 4;
+    ctx.shadowColor = colorHex;
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+
+    // パターン描画
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = colorHex;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    switch (patternId) {
+      case 'smile':
+        // 目
+        ctx.beginPath();
+        ctx.arc(42, 52, 9, 0, Math.PI * 2);
+        ctx.arc(86, 52, 9, 0, Math.PI * 2);
+        ctx.fill();
+        // 笑顔の口
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(64, 68, 22, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+        break;
+      case 'kanji_tobu':
+        ctx.font = 'bold 58px sans-serif';
+        ctx.fillText('飛', 64, 64);
+        break;
+      case 'kanji_hikari':
+        ctx.font = 'bold 58px sans-serif';
+        ctx.fillText('光', 64, 64);
+        break;
+      case 'kanji_kakeru':
+        ctx.font = 'bold 58px sans-serif';
+        ctx.fillText('翔', 64, 64);
+        break;
+      case 'pulse':
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(16, 64);
+        ctx.lineTo(40, 64);
+        ctx.lineTo(52, 28);
+        ctx.lineTo(68, 98);
+        ctx.lineTo(84, 46);
+        ctx.lineTo(96, 64);
+        ctx.lineTo(112, 64);
+        ctx.stroke();
+        break;
+      case 'heart':
+        ctx.font = 'bold 52px sans-serif';
+        ctx.fillText('💖', 64, 64);
+        break;
+      default:
+        ctx.font = 'bold 50px sans-serif';
+        ctx.fillText('⚡', 64, 64);
+        break;
+    }
+
+    ctx.shadowBlur = 0;
+    if (this.chestTexture) this.chestTexture.needsUpdate = true;
+  }
+
+  getRobotColorHex(colorId) {
+    const map = { cyan: '#00e5ff', green: '#00ff88', orange: '#ff7700', pink: '#ff22aa', gold: '#ffd700' };
+    return map[colorId] || '#00e5ff';
+  }
+
+  // アバター表示モードの切り替え ('vrm' or 'robot')
+  setAvatarMode(mode = 'vrm') {
+    this.currentAvatarMode = mode;
+
+    if (mode === 'robot') {
+      if (this.currentVrm) this.currentVrm.scene.visible = false;
+      if (!this.isRobotInitialized) {
+        this.initRobot();
+      }
+      if (this.robotGroup) {
+        this.robotGroup.visible = true;
+      }
+      this.adjustCameraForRobot();
+      this.showLoadingOverlay(false);
+    } else {
+      if (this.robotGroup) this.robotGroup.visible = false;
+      if (this.currentVrm) {
+        this.currentVrm.scene.visible = true;
+        this.adjustCameraForModel(this.currentModelId);
+      } else {
+        const curVrm = this.loadedVrms[this.currentModelId];
+        if (curVrm) {
+          this.attachVrmToScene(curVrm, this.currentModelId);
+        } else {
+          this.loadModel(this.currentModelId);
+        }
+      }
+    }
+  }
+
+  adjustCameraForRobot() {
+    if (this.camera && this.controls) {
+      this.controls.target.set(0, 0.92, 0);
+      this.camera.position.set(0, 0.98, 3.6);
+      this.controls.update();
+    }
+  }
+
   switchModel(modelId) {
     if (!VRM_MODELS_DATA[modelId]) return;
     this.currentModelId = modelId;
+    this.currentAvatarMode = 'vrm';
+    if (this.robotGroup) this.robotGroup.visible = false;
 
     if (this.loadedVrms[modelId]) {
-      // 既に読み込み済みなら瞬時に切り替え
       this.attachVrmToScene(this.loadedVrms[modelId], modelId);
     } else {
-      // 未ロードならロード開始
       this.showLoadingOverlay(true, VRM_MODELS_DATA[modelId]);
       this.loadModel(modelId, (vrm) => {
-        if (this.currentModelId === modelId && this.scene) {
+        if (this.currentModelId === modelId && this.scene && this.currentAvatarMode === 'vrm') {
           this.attachVrmToScene(vrm, modelId);
         }
       });
     }
+  }
+
+  // ロボット着せ替え反映
+  applyRobotCostume(costume = {}) {
+    if (costume.robotChest) {
+      this.currentRobotChest = costume.robotChest;
+    }
+    if (costume.robotColor) {
+      this.currentRobotColor = costume.robotColor;
+      const hex = this.getRobotColorHex(costume.robotColor);
+      if (this.robotLight) {
+        this.robotLight.color.set(hex);
+      }
+    }
+    this.drawChestScreen(this.currentRobotChest, this.getRobotColorHex(this.currentRobotColor));
+  }
+
+  // ネコ着せ替え反映
+  applyCatCostume(costume = {}) {
+    // 将来の拡張フック（オーラ等）
   }
 
   showLoadingOverlay(show, modelInfo = VRM_MODELS_DATA[this.currentModelId]) {
@@ -4779,10 +5203,9 @@ class VrmAvatarController {
       // 1. Scene
       this.scene = new THREE.Scene();
 
-      // 2. Camera（等身大モデルが頭から足まで美しく収まる30度FOV）
-      const modelInfo = VRM_MODELS_DATA[this.currentModelId] || VRM_MODELS_DATA.men;
+      // 2. Camera（30度FOV）
       this.camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 25.0);
-      this.camera.position.set(0, modelInfo.cameraY, modelInfo.cameraDist);
+      this.camera.position.set(0, 0.95, 3.7);
 
       // 3. Renderer
       this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
@@ -4792,7 +5215,6 @@ class VrmAvatarController {
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 1.1;
 
-      // キャンバスをコンテナにピッタリフィット
       this.renderer.domElement.style.width = '100%';
       this.renderer.domElement.style.height = '100%';
       this.renderer.domElement.style.display = 'block';
@@ -4805,15 +5227,15 @@ class VrmAvatarController {
       this.controls = new OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.08;
-      this.controls.target.set(0, modelInfo.targetY, 0); // モデルの中心
+      this.controls.target.set(0, 0.88, 0);
       this.controls.minDistance = 0.8;
       this.controls.maxDistance = 6.0;
       this.controls.maxPolarAngle = Math.PI * 0.65;
       this.controls.minPolarAngle = Math.PI * 0.10;
       this.controls.update();
 
-      // 5. Lights（全身が鮮明に明るく見える4点ライト構成）
-      const ambLight = new THREE.AmbientLight(0xffffff, 1.25);
+      // 5. Lights
+      const ambLight = new THREE.AmbientLight(0xffffff, 1.3);
       this.scene.add(ambLight);
 
       const hemiLight = new THREE.HemisphereLight(0xffffff, 0x223355, 1.8);
@@ -4827,7 +5249,10 @@ class VrmAvatarController {
       rimLight.position.set(-1.8, 1.8, -1.5);
       this.scene.add(rimLight);
 
-      // 6. Resize Observer
+      // 6. ロボットも同時に準備
+      this.initRobot();
+
+      // 7. Resize Observer
       if (window.ResizeObserver) {
         const ro = new ResizeObserver(() => this.resize());
         ro.observe(this.container);
@@ -4837,15 +5262,9 @@ class VrmAvatarController {
       this.isInitialized = true;
     }
 
-    const currentVrm = this.loadedVrms[this.currentModelId];
-    if (currentVrm) {
-      this.attachVrmToScene(currentVrm, this.currentModelId);
-    } else {
-      this.showLoadingOverlay(true);
-      if (!this.loadingStates[this.currentModelId]) {
-        this.loadModel(this.currentModelId);
-      }
-    }
+    // モードに応じた表示
+    const initialMode = window.gameState?.avatarType || 'vrm';
+    this.setAvatarMode(initialMode === 'robot' ? 'robot' : 'vrm');
 
     this.resize();
     this.start();
@@ -4858,7 +5277,6 @@ class VrmAvatarController {
     }
     this.currentVrm = vrm;
 
-    // メッシュのカメラ外判定による非表示バグを防止
     vrm.scene.traverse((obj) => {
       if (obj.isMesh) {
         obj.frustumCulled = false;
@@ -4869,14 +5287,16 @@ class VrmAvatarController {
 
     this.scene.add(vrm.scene);
 
-    // カメラとコントローラのフィッティング
-    this.adjustCameraForModel(modelId);
+    if (this.currentAvatarMode === 'vrm') {
+      vrm.scene.visible = true;
+      if (this.robotGroup) this.robotGroup.visible = false;
+      this.adjustCameraForModel(modelId);
+    } else {
+      vrm.scene.visible = false;
+    }
 
-    // 自然なポーズと表情を再適用
     this.applyNaturalPose(vrm);
     this.setExpression(window.gameState?.vrmExpression || 'happy');
-
-    // オーバーレイを即座にフェードアウト
     this.showLoadingOverlay(false);
     this.start();
   }
@@ -4931,7 +5351,6 @@ class VrmAvatarController {
     const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
     const head = vrm.humanoid.getNormalizedBoneNode('head');
 
-    // 自然で愛らしい立ち姿（腕を自然に下ろして少し肘を曲げる）
     if (leftUpperArm) leftUpperArm.rotation.set(0.12, 0.15, -1.1);
     if (rightUpperArm) rightUpperArm.rotation.set(0.12, -0.15, 1.1);
     if (leftLowerArm) leftLowerArm.rotation.set(0.25, 0.3, 0.1);
@@ -4945,7 +5364,6 @@ class VrmAvatarController {
     if (!vrm || !vrm.expressionManager) return;
     const em = vrm.expressionManager;
 
-    // 全ての Expression を確実にリセット
     if (typeof em.resetValues === 'function') {
       em.resetValues();
     } else {
@@ -4955,7 +5373,6 @@ class VrmAvatarController {
       });
     }
 
-    // 単一プリセットで美しく適用
     switch (exprName) {
       case 'happy':
         em.setValue('happy', 1.0);
@@ -4981,15 +5398,17 @@ class VrmAvatarController {
 
   triggerAction(actionName) {
     if (actionName === 'reset') {
-      this.adjustCameraForModel(this.currentModelId);
+      if (this.currentAvatarMode === 'robot') {
+        this.adjustCameraForRobot();
+      } else {
+        this.adjustCameraForModel(this.currentModelId);
+      }
       return;
     }
 
-    if (actionName === 'meow' || actionName === 'bark') {
-      this.actionState = 'meow';
-      this.actionTime = 0;
-      if (window.playSound) window.playSound('click');
-    }
+    this.actionState = actionName;
+    this.actionTime = 0;
+    if (window.playSound) window.playSound('click');
   }
 
   start() {
@@ -5010,18 +5429,72 @@ class VrmAvatarController {
   }
 
   update() {
-    const delta = Math.min(this.clock.getDelta(), 0.05); // SpringBone暴走を防ぐキャップ
+    const delta = Math.min(this.clock.getDelta(), 0.05);
     const elapsed = this.clock.getElapsedTime();
 
     if (this.controls) {
       this.controls.update();
     }
 
-    if (this.currentVrm) {
+    // 🤖 ロボットのプロシージャルアニメーション（数式駆動）
+    if (this.currentAvatarMode === 'robot' && this.robotGroup && this.robotGroup.visible) {
+      if (!this.actionState) {
+        // 1. ホバリング浮遊 (数式: sin波)
+        const hover = Math.sin(elapsed * 2.4) * 0.07;
+        this.robotGroup.position.y = hover;
+
+        // 2. 慣性チルト (小首かしげ & 体幹の微細なロール)
+        this.robotGroup.rotation.z = Math.sin(elapsed * 1.6) * 0.035;
+        this.robotGroup.rotation.x = Math.sin(elapsed * 2.0) * 0.02;
+
+        // 3. 生体的な呼吸パルス (スケーリング)
+        const breath = 1.0 + Math.sin(elapsed * 3.0) * 0.012;
+        if (this.robotMesh) {
+          this.robotMesh.scale.set(breath, 2.0 - breath, breath);
+        }
+
+        // 4. 地面シャドウの連動
+        if (this.shadowMesh) {
+          const s = 1.0 - hover * 1.5;
+          this.shadowMesh.scale.set(s, s, s);
+          this.shadowMesh.material.opacity = Math.max(0.15, 0.35 - hover * 0.8);
+        }
+      } else if (this.actionState === 'wave') {
+        // 👋 「ハロー！」アクション（手を振る愛らしいジャンプ）
+        this.actionTime += delta;
+        const t = this.actionTime;
+        if (t < 1.1) {
+          const hop = Math.sin((t / 1.1) * Math.PI) * 0.16;
+          this.robotGroup.position.y = hop;
+          this.robotGroup.rotation.z = Math.sin(t * 16) * 0.12;
+          this.robotGroup.rotation.y = Math.sin(t * 12) * 0.15;
+        } else {
+          this.actionState = null;
+          this.robotGroup.position.y = 0;
+          this.robotGroup.rotation.set(0, 0, 0);
+        }
+      } else if (this.actionState === 'boost') {
+        // ⚡ 「ブースト」アクション（スラスター急上昇＆360°スピン）
+        this.actionTime += delta;
+        const t = this.actionTime;
+        if (t < 1.0) {
+          const boostY = Math.sin((t / 1.0) * Math.PI) * 0.35;
+          this.robotGroup.position.y = boostY;
+          this.robotGroup.rotation.y = t * Math.PI * 2;
+        } else {
+          this.actionState = null;
+          this.robotGroup.position.y = 0;
+          this.robotGroup.rotation.set(0, 0, 0);
+        }
+      }
+    }
+
+    // 🐱 ネコマスコット (VRM) のアニメーション
+    if (this.currentAvatarMode === 'vrm' && this.currentVrm && this.currentVrm.scene.visible) {
       const vrm = this.currentVrm;
       const em = vrm.expressionManager;
 
-      // 1. 自動まばたき（目が開いている表情 neutral の時だけ自然に行う）
+      // 1. 自動まばたき
       const canBlink = (this.currentExpression === 'neutral') && !this.actionState;
       if (canBlink) {
         this.blinkTimer += delta;
@@ -5057,13 +5530,13 @@ class VrmAvatarController {
         if (head) {
           head.rotation.x = -0.02 + Math.sin(elapsed * 1.8) * 0.02;
           head.rotation.y = Math.sin(elapsed * 1.0) * 0.05;
-          head.rotation.z = 0.04 + Math.sin(elapsed * 1.4) * 0.03; // 愛らしく小首をかしげる
+          head.rotation.z = 0.04 + Math.sin(elapsed * 1.4) * 0.03;
         }
         if (vrm.scene) {
           vrm.scene.position.y = Math.sin(elapsed * 2.0) * 0.008;
         }
       } else if (this.actionState === 'meow') {
-        // 「ニャー！」アクション（元気にぴょん！と跳ねて口をニャーと開ける）
+        // 🐾 「ニャー！」アクション
         this.actionTime += delta;
         const t = this.actionTime;
         if (t < 0.9) {
@@ -5089,7 +5562,7 @@ class VrmAvatarController {
         }
       }
 
-      // 3. VRMのSpringBone（猫耳やしっぽ等）と表情更新
+      // 3. VRMのSpringBoneと表情更新
       vrm.update(delta);
     }
 
@@ -5475,9 +5948,17 @@ const gameState = {
   pilotAdj: '疾風の',
   pilotNoun: 'ハヤブサ',
   pilotNum: '01号',
-  avatarType: 'vrm', // 'vrm' (3D neko-mascot: men/women) or 'classic'
+  avatarType: 'vrm', // 'vrm' (3D neko-mascot: men/women) or 'robot' (3D cyber robot)
   vrmModel: 'men',   // 'men' (neko-mascot  men.vrm) or 'women' (neko-mascot women.vrm)
   vrmExpression: 'happy',
+  costume: {
+    catAccessory: 'none',
+    catAura: 'none',
+    robotChest: 'smile',
+    robotColor: 'cyan',
+    robotHead: 'none',
+    robotAura: 'none'
+  },
   avatar: { base: 0, hair: 0, suit: 0, accessory: 0 },
   
   // 手書き特訓
@@ -5519,6 +6000,14 @@ function loadUserData() {
   gameState.avatarType = getStorage('kanji_jet_avatar_type', 'vrm');
   gameState.vrmModel = getStorage('kanji_jet_vrm_model', 'men');
   gameState.vrmExpression = getStorage('kanji_jet_vrm_expr', 'happy');
+  gameState.costume = getStorage('kanji_jet_costume', {
+    catAccessory: 'none',
+    catAura: 'none',
+    robotChest: 'smile',
+    robotColor: 'cyan',
+    robotHead: 'none',
+    robotAura: 'none'
+  });
   gameState.avatar = getStorage('kanji_jet_avatar', { base: 0, hair: 0, suit: 0, accessory: 0 });
   gameState.myGrade = parseInt(getStorage('kanji_jet_my_grade', '1'), 10) || 1;
   gameState.soundEnabled = getStorage('kanji_jet_sound', true);
@@ -5530,8 +6019,11 @@ function loadUserData() {
 
 function updatePilotDisplay() {
   const fullName = `${gameState.pilotAdj}${gameState.pilotNoun}${gameState.pilotNum}`;
+  const isRobot = gameState.avatarType === 'robot';
   const isVrm = gameState.avatarType === 'vrm';
-  const prefix = isVrm ? '🐱 ' : '⚡ ';
+  let prefix = '🐱 ';
+  if (isRobot) prefix = '🤖 ';
+  else if (!isVrm) prefix = '⚡ ';
 
   const elHome = document.getElementById('home-pilot-name');
   if (elHome) elHome.textContent = `${prefix}${fullName}`;
@@ -5547,15 +6039,37 @@ function updatePilotDisplay() {
 
   const elBadge = document.getElementById('avatar-preview-badge');
   if (elBadge) {
-    elBadge.textContent = isVrm ? '🐱 3Dマスコット' : '👤 クラシック';
-    elBadge.style.borderColor = isVrm ? '#00e5ff' : '#ffd700';
-    elBadge.style.color = isVrm ? '#00e5ff' : '#ffd700';
+    if (isRobot) {
+      elBadge.textContent = '🤖 3Dロボット';
+      elBadge.style.borderColor = '#00ff88';
+      elBadge.style.color = '#00ff88';
+    } else if (isVrm) {
+      elBadge.textContent = '🐱 3Dマスコット';
+      elBadge.style.borderColor = '#00e5ff';
+      elBadge.style.color = '#00e5ff';
+    } else {
+      elBadge.textContent = '👤 クラシック';
+      elBadge.style.borderColor = '#ffd700';
+      elBadge.style.color = '#ffd700';
+    }
   }
 
   const elHomeIcon = document.getElementById('home-avatar-icon');
   const elFullPrev = document.getElementById('avatar-full-preview');
 
-  if (isVrm) {
+  if (isRobot) {
+    if (elHomeIcon) {
+      elHomeIcon.innerHTML = `<img src="assets/robot-icon.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="3Dロボットパイロット">`;
+    }
+    if (elFullPrev) {
+      elFullPrev.style.opacity = '1';
+      elFullPrev.style.filter = 'none';
+      elFullPrev.innerHTML = `
+        <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+          <img src="assets/robot.png" style="width: 104px; height: 104px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.45)); animation: bounceRobot 3s infinite alternate;" alt="cyber-robot">
+        </div>`;
+    }
+  } else if (isVrm) {
     const curModelId = gameState.vrmModel || 'men';
     const curIcon = curModelId === 'women' ? 'assets/neko-women-icon.png' : 'assets/neko-men-icon.png';
     if (elHomeIcon) {
@@ -8016,6 +8530,7 @@ function saveCustomization() {
   setStorage('kanji_jet_avatar_type', gameState.avatarType);
   setStorage('kanji_jet_vrm_model', gameState.vrmModel);
   setStorage('kanji_jet_vrm_expr', gameState.vrmExpression);
+  setStorage('kanji_jet_costume', gameState.costume);
 }
 
 function renderHangarPreview() {
@@ -8085,24 +8600,79 @@ const VRM_AVATAR_CONFIG = {
   isReady: true
 };
 
-function selectAvatarType(type = 'vrm') {
-  gameState.avatarType = 'vrm';
-  
-  const btnVrm = document.getElementById('btn-type-vrm');
-  const panelVrm = document.getElementById('vrm-avatar-panel');
-  const panelClassic = document.getElementById('legacy-avatar-parts-wrapper');
+// --- アバター・きせかえ UI 制御システム ---
+let currentCostumeSubTab = 'cat'; // 'cat' or 'robot'
+let currentCatCostumeCat = 'accessory'; // 'accessory' or 'aura'
+let currentRobotCostumeCat = 'chest'; // 'chest', 'color', 'head', 'aura'
 
-  if (btnVrm) btnVrm.classList.add('active');
-  if (panelVrm) panelVrm.style.display = 'flex';
-  if (panelClassic) panelClassic.style.display = 'none';
+function selectAvatarType(type = 'vrm') {
+  const btnVrm = document.getElementById('btn-type-vrm');
+  const btnRobot = document.getElementById('btn-type-robot');
+  const btnCostume = document.getElementById('btn-type-costume');
+
+  const panelVrm = document.getElementById('vrm-avatar-panel');
+  const panelRobot = document.getElementById('robot-avatar-panel');
+  const panelCostume = document.getElementById('costume-avatar-panel');
+  const actionBtn = document.getElementById('btn-action-main');
+
+  if (btnVrm) btnVrm.classList.toggle('active', type === 'vrm');
+  if (btnRobot) btnRobot.classList.toggle('active', type === 'robot');
+  if (btnCostume) btnCostume.classList.toggle('active', type === 'costume');
+
+  if (panelVrm) panelVrm.style.display = type === 'vrm' ? 'flex' : 'none';
+  if (panelRobot) panelRobot.style.display = type === 'robot' ? 'flex' : 'none';
+  if (panelCostume) panelCostume.style.display = type === 'costume' ? 'flex' : 'none';
+
+  if (type === 'vrm') {
+    gameState.avatarType = 'vrm';
+    if (actionBtn) {
+      actionBtn.innerHTML = '🐾 ニャー！とごあいさつ';
+      actionBtn.title = 'ネコマスコットのアクション';
+    }
+    if (window.VrmAvatarManager) {
+      window.VrmAvatarManager.setAvatarMode('vrm');
+    }
+  } else if (type === 'robot') {
+    gameState.avatarType = 'robot';
+    if (actionBtn) {
+      actionBtn.innerHTML = '👋 ハロー！とごあいさつ';
+      actionBtn.title = 'サイバーロボのアクション';
+    }
+    initRobotPanelUI();
+    if (window.VrmAvatarManager) {
+      window.VrmAvatarManager.setAvatarMode('robot');
+      window.VrmAvatarManager.applyRobotCostume(gameState.costume);
+    }
+  } else if (type === 'costume') {
+    // きせかえタブを開いたときは現在のアバターに合わせたサブタブを表示
+    const targetSubTab = gameState.avatarType === 'robot' ? 'robot' : 'cat';
+    switchCostumeSubTab(targetSubTab);
+  }
+
+  saveCustomization();
+  updatePilotDisplay();
 
   if (window.VrmAvatarManager) {
-    window.VrmAvatarManager.init('vrm-viewer-container');
     window.VrmAvatarManager.resize();
     window.VrmAvatarManager.start();
   }
+  if (window.playSound) playSound('click');
+}
 
-  updatePilotDisplay();
+function triggerCurrentAction() {
+  if (window.VrmAvatarManager) {
+    if (window.VrmAvatarManager.currentAvatarMode === 'robot' || gameState.avatarType === 'robot') {
+      window.VrmAvatarManager.triggerAction('wave');
+    } else {
+      window.VrmAvatarManager.triggerAction('meow');
+    }
+  }
+}
+
+function triggerVrmAction(action) {
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.triggerAction(action);
+  }
 }
 
 function switchVrmModel(modelId) {
@@ -8134,13 +8704,7 @@ function switchVrmModel(modelId) {
 }
 
 function onCostumePrepClick() {
-  const msg = '👗 3Dネコ・パイロットの着せ替え機能は現在アップデート準備中です！\n公開まで楽しみにお待ちください！';
-  if (typeof showSystemNoticeModal === 'function') {
-    showSystemNoticeModal('👗 着せ替え：準備中', msg);
-  } else {
-    alert(msg);
-  }
-  if (window.playSound) playSound('click');
+  selectAvatarType('costume');
 }
 
 function setAvatarExpression(expr) {
@@ -8157,14 +8721,207 @@ function setAvatarExpression(expr) {
   if (window.playSound) playSound('click');
 }
 
-function triggerVrmAction(action) {
-  if (window.VrmAvatarManager) {
-    window.VrmAvatarManager.triggerAction(action);
+// 🤖 ロボット設定パネル（胸モニター＆ネオンカラー）UI初期化
+function initRobotPanelUI() {
+  const chestContainer = document.getElementById('robot-chest-buttons');
+  if (chestContainer && window.ROBOT_COSTUMES_DATA?.chest) {
+    chestContainer.innerHTML = window.ROBOT_COSTUMES_DATA.chest.map(item => `
+      <button class="vrm-expr-btn ${item.id === gameState.costume.robotChest ? 'active' : ''}" 
+              id="btn-robot-chest-${item.id}" 
+              onclick="switchRobotChest('${item.id}')"
+              title="${item.desc}">
+        <span style="font-size: 14px;">${item.icon}</span> ${item.name}
+      </button>
+    `).join('');
+  }
+
+  const colorContainer = document.getElementById('robot-color-buttons');
+  if (colorContainer && window.ROBOT_COSTUMES_DATA?.color) {
+    colorContainer.innerHTML = window.ROBOT_COSTUMES_DATA.color.map(item => `
+      <button class="vrm-expr-btn ${item.id === gameState.costume.robotColor ? 'active' : ''}" 
+              id="btn-robot-color-${item.id}" 
+              onclick="switchRobotColor('${item.id}')"
+              title="${item.desc}">
+        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${item.color}; box-shadow:0 0 6px ${item.color}; vertical-align:middle; margin-right:4px;"></span>${item.name}
+      </button>
+    `).join('');
   }
 }
 
+function switchRobotChest(id) {
+  gameState.costume.robotChest = id;
+  saveCustomization();
+  if (window.ROBOT_COSTUMES_DATA?.chest) {
+    window.ROBOT_COSTUMES_DATA.chest.forEach(item => {
+      const btn = document.getElementById(`btn-robot-chest-${item.id}`);
+      if (btn) btn.classList.toggle('active', item.id === id);
+    });
+  }
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.applyRobotCostume(gameState.costume);
+  }
+  if (currentCostumeSubTab === 'robot' && currentRobotCostumeCat === 'chest') {
+    renderRobotCostumeGrid();
+  }
+  if (window.playSound) playSound('click');
+}
+
+function switchRobotColor(id) {
+  gameState.costume.robotColor = id;
+  saveCustomization();
+  if (window.ROBOT_COSTUMES_DATA?.color) {
+    window.ROBOT_COSTUMES_DATA.color.forEach(item => {
+      const btn = document.getElementById(`btn-robot-color-${item.id}`);
+      if (btn) btn.classList.toggle('active', item.id === id);
+    });
+  }
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.applyRobotCostume(gameState.costume);
+  }
+  if (currentCostumeSubTab === 'robot' && currentRobotCostumeCat === 'color') {
+    renderRobotCostumeGrid();
+  }
+  if (window.playSound) playSound('laser');
+}
+
+// 👗 きせかえサブタブ切り替え（ネコ用 / ロボット用）
+function switchCostumeSubTab(subTab) {
+  currentCostumeSubTab = subTab;
+  const btnCat = document.getElementById('btn-costume-cat');
+  const btnRobot = document.getElementById('btn-costume-robot');
+  const contentCat = document.getElementById('costume-sub-content-cat');
+  const contentRobot = document.getElementById('costume-sub-content-robot');
+
+  if (btnCat) btnCat.classList.toggle('active', subTab === 'cat');
+  if (btnRobot) btnRobot.classList.toggle('active', subTab === 'robot');
+
+  if (contentCat) contentCat.style.display = subTab === 'cat' ? 'block' : 'none';
+  if (contentRobot) contentRobot.style.display = subTab === 'robot' ? 'block' : 'none';
+
+  // 3Dビューポートもサブタブに合わせてプレビュー表示
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.setAvatarMode(subTab === 'cat' ? 'vrm' : 'robot');
+    if (subTab === 'robot') {
+      window.VrmAvatarManager.applyRobotCostume(gameState.costume);
+    }
+  }
+
+  if (subTab === 'cat') {
+    renderCatCostumeGrid();
+  } else {
+    renderRobotCostumeGrid();
+  }
+  if (window.playSound) playSound('click');
+}
+
+// 🐱 ネコ用きせかえカテゴリ切り替え＆レンダリング
+function switchCatCostumeCat(cat) {
+  currentCatCostumeCat = cat;
+  const btnAcc = document.getElementById('cat-costume-cat-acc');
+  const btnAura = document.getElementById('cat-costume-cat-aura');
+  if (btnAcc) btnAcc.classList.toggle('active', cat === 'accessory');
+  if (btnAura) btnAura.classList.toggle('active', cat === 'aura');
+  renderCatCostumeGrid();
+  if (window.playSound) playSound('click');
+}
+
+function renderCatCostumeGrid() {
+  const container = document.getElementById('cat-costume-items-grid');
+  if (!container || !window.CAT_COSTUMES_DATA) return;
+  const items = window.CAT_COSTUMES_DATA[currentCatCostumeCat] || [];
+  const currentSelected = currentCatCostumeCat === 'accessory' 
+    ? gameState.costume.catAccessory 
+    : gameState.costume.catAura;
+
+  container.innerHTML = items.map(item => {
+    const isSelected = item.id === currentSelected;
+    return `
+      <div class="costume-item-card ${isSelected ? 'active' : ''}" onclick="selectCatCostume('${currentCatCostumeCat}', '${item.id}')">
+        <div class="costume-item-icon">${item.icon}</div>
+        <div class="costume-item-name">${item.name}</div>
+        <div class="costume-item-desc">${item.desc}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectCatCostume(cat, id) {
+  if (cat === 'accessory') {
+    gameState.costume.catAccessory = id;
+  } else if (cat === 'aura') {
+    gameState.costume.catAura = id;
+  }
+  saveCustomization();
+  renderCatCostumeGrid();
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.applyCatCostume(gameState.costume);
+  }
+  if (window.playSound) playSound('click');
+}
+
+// 🤖 ロボット用きせかえカテゴリ切り替え＆レンダリング
+function switchRobotCostumeCat(cat) {
+  currentRobotCostumeCat = cat;
+  const categories = ['chest', 'color', 'head', 'aura'];
+  categories.forEach(c => {
+    const btn = document.getElementById(`robot-costume-cat-${c}`);
+    if (btn) btn.classList.toggle('active', c === cat);
+  });
+  renderRobotCostumeGrid();
+  if (window.playSound) playSound('click');
+}
+
+function renderRobotCostumeGrid() {
+  const container = document.getElementById('robot-costume-items-grid');
+  if (!container || !window.ROBOT_COSTUMES_DATA) return;
+  const items = window.ROBOT_COSTUMES_DATA[currentRobotCostumeCat] || [];
+  let currentSelected = '';
+  if (currentRobotCostumeCat === 'chest') currentSelected = gameState.costume.robotChest;
+  else if (currentRobotCostumeCat === 'color') currentSelected = gameState.costume.robotColor;
+  else if (currentRobotCostumeCat === 'head') currentSelected = gameState.costume.robotHead;
+  else if (currentRobotCostumeCat === 'aura') currentSelected = gameState.costume.robotAura;
+
+  container.innerHTML = items.map(item => {
+    const isSelected = item.id === currentSelected;
+    let iconHtml = item.icon;
+    if (currentRobotCostumeCat === 'color' && item.color) {
+      iconHtml = `<span style="display:inline-block; width:28px; height:28px; border-radius:50%; background:${item.color}; box-shadow:0 0 10px ${item.color};"></span>`;
+    }
+    return `
+      <div class="costume-item-card ${isSelected ? 'active' : ''}" onclick="selectRobotCostume('${currentRobotCostumeCat}', '${item.id}')">
+        <div class="costume-item-icon">${iconHtml}</div>
+        <div class="costume-item-name">${item.name}</div>
+        <div class="costume-item-desc">${item.desc}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectRobotCostume(cat, id) {
+  if (cat === 'chest') {
+    gameState.costume.robotChest = id;
+    switchRobotChest(id);
+  } else if (cat === 'color') {
+    gameState.costume.robotColor = id;
+    switchRobotColor(id);
+  } else if (cat === 'head') {
+    gameState.costume.robotHead = id;
+  } else if (cat === 'aura') {
+    gameState.costume.robotAura = id;
+  }
+  saveCustomization();
+  renderRobotCostumeGrid();
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.applyRobotCostume(gameState.costume);
+  }
+  if (window.playSound) playSound('click');
+}
+
 function initAvatarSettingsUI() {
-  selectAvatarType('vrm');
+  const curType = gameState.avatarType === 'robot' ? 'robot' : 'vrm';
+  selectAvatarType(curType);
+
+  // ネコ側UI同期
   const curModel = gameState.vrmModel || 'men';
   ['men', 'women'].forEach(id => {
     const btn = document.getElementById(`btn-vrm-${id}`);
@@ -8175,10 +8932,17 @@ function initAvatarSettingsUI() {
     elStatusName.textContent = window.VRM_MODELS_DATA[curModel].name;
   }
   setAvatarExpression(gameState.vrmExpression || 'happy');
-  
-  const setupVrmViewer = () => {
+
+  // ロボット側UI同期
+  initRobotPanelUI();
+
+  const setupViewer = () => {
     if (window.VrmAvatarManager) {
       window.VrmAvatarManager.init('vrm-viewer-container');
+      window.VrmAvatarManager.setAvatarMode(curType);
+      if (curType === 'robot') {
+        window.VrmAvatarManager.applyRobotCostume(gameState.costume);
+      }
       window.VrmAvatarManager.resize();
       window.VrmAvatarManager.start();
     }
@@ -8186,10 +8950,10 @@ function initAvatarSettingsUI() {
 
   // モーダルオープン時のコンテナ描画確定に合わせた多段階リサイズ
   if (window.VrmAvatarManager) {
-    requestAnimationFrame(setupVrmViewer);
+    requestAnimationFrame(setupViewer);
   } else {
     window.addEventListener('vrm-manager-ready', () => {
-      requestAnimationFrame(setupVrmViewer);
+      requestAnimationFrame(setupViewer);
     }, { once: true });
   }
 
