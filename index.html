@@ -4441,7 +4441,8 @@
                 <!-- ネコ用きせかえコンテンツ -->
                 <div id="costume-sub-content-cat">
                   <div class="avatar-category-nav" style="margin-bottom: 8px;">
-                    <button class="avatar-cat-btn active" id="cat-costume-cat-acc" onclick="switchCatCostumeCat('accessory')">✨ そうしょく</button>
+                    <button class="avatar-cat-btn active" id="cat-costume-cat-outfit" onclick="switchCatCostumeCat('outfit')">🥋 いしょう</button>
+                    <button class="avatar-cat-btn" id="cat-costume-cat-acc" onclick="switchCatCostumeCat('accessory')">✨ そうしょく</button>
                     <button class="avatar-cat-btn" id="cat-costume-cat-aura" onclick="switchCatCostumeCat('aura')">🌟 オーラ・光彩</button>
                   </div>
                   <div class="costume-item-grid" id="cat-costume-items-grid">
@@ -4662,6 +4663,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import { CAT_COSTUMES_DATA, VrmCostumeManager } from './assets/costumes/vrm-costumes.js';
 
 // 🐱 3D ネコ・マスコット モデル定義
 export const VRM_MODELS_DATA = {
@@ -4699,25 +4701,8 @@ export const VRM_MODELS_DATA = {
   }
 };
 window.VRM_MODELS_DATA = VRM_MODELS_DATA;
-
-// 🐱 ネコ用きせかえデータ
-export const CAT_COSTUMES_DATA = {
-  accessory: [
-    { id: 'none', name: 'なし', icon: '✕', desc: 'アクセサリーなし' },
-    { id: 'ribbon', name: 'プリティリボン', icon: '🎀', desc: '首元を飾る赤いキュートなリボン' },
-    { id: 'bell', name: 'ゴールドベル', icon: '🔔', desc: 'チリンと鳴る黄金の鈴チョーカー' },
-    { id: 'goggles', name: 'パイロットゴーグル', icon: '🥽', desc: '宇宙飛行用の耐熱耐圧ゴーグル' },
-    { id: 'cap', name: 'キャプテンハット', icon: '🧢', desc: '機長専用のネイビーキャップ' }
-  ],
-  aura: [
-    { id: 'none', name: 'なし', icon: '—', desc: 'オーラなし' },
-    { id: 'stars', name: 'スターダスト', icon: '✨', desc: '星屑がきらめく宇宙の光彩' },
-    { id: 'paw', name: 'にくきゅうオーラ', icon: '🐾', desc: '愛らしいピンクの足あとオーラ' },
-    { id: 'neon', name: 'サイバーリング', icon: '⚡', desc: '青く発光するパルスリング' },
-    { id: 'sakura', name: 'さくらふぶき', icon: '🌸', desc: '舞い散る雅な桜のエフェクト' }
-  ]
-};
 window.CAT_COSTUMES_DATA = CAT_COSTUMES_DATA;
+export { CAT_COSTUMES_DATA, VrmCostumeManager };
 
 // 🤖 ロボット用きせかえデータ
 export const ROBOT_COSTUMES_DATA = {
@@ -4766,6 +4751,9 @@ class VrmAvatarController {
     
     // 表示モード ('vrm' or 'robot')
     this.currentAvatarMode = 'vrm';
+
+    // 👘 ネコきせかえマネージャー (8大コスチューム・3Dモデリング)
+    this.costumeManager = new VrmCostumeManager(THREE);
 
     // VRMモデル管理
     this.currentModelId = 'men';
@@ -5146,8 +5134,18 @@ class VrmAvatarController {
   }
 
   // ネコ着せ替え反映
-  applyCatCostume(costume = {}) {
-    // 将来の拡張フック（オーラ等）
+  applyCatCostume(costume = window.gameState?.costume || {}) {
+    const vrm = this.currentVrm || this.loadedVrms[this.currentModelId];
+    if (!vrm) return;
+    const outfitId = costume.catOutfit || 'default';
+    const accId = costume.catAccessory || 'none';
+    const auraId = costume.catAura || 'none';
+
+    if (this.costumeManager) {
+      this.costumeManager.applyOutfit(vrm, outfitId);
+      this.costumeManager.applyAccessory(vrm, accId);
+      this.costumeManager.applyAura(this.scene, vrm, auraId);
+    }
   }
 
   showLoadingOverlay(show, modelInfo = VRM_MODELS_DATA[this.currentModelId]) {
@@ -5297,6 +5295,7 @@ class VrmAvatarController {
 
     this.applyNaturalPose(vrm);
     this.setExpression(window.gameState?.vrmExpression || 'happy');
+    this.applyCatCostume(window.gameState?.costume);
     this.showLoadingOverlay(false);
     this.start();
   }
@@ -5564,6 +5563,11 @@ class VrmAvatarController {
 
       // 3. VRMのSpringBoneと表情更新
       vrm.update(delta);
+    }
+
+    // 🌟 オーラの微細な回転アニメーション
+    if (this.costumeManager && this.costumeManager.currentAuraGroup) {
+      this.costumeManager.currentAuraGroup.rotation.y = elapsed * 0.75;
     }
 
     if (this.renderer && this.scene && this.camera) {
@@ -5952,6 +5956,7 @@ const gameState = {
   vrmModel: 'men',   // 'men' (neko-mascot  men.vrm) or 'women' (neko-mascot women.vrm)
   vrmExpression: 'happy',
   costume: {
+    catOutfit: 'default',
     catAccessory: 'none',
     catAura: 'none',
     robotChest: 'smile',
@@ -6001,6 +6006,7 @@ function loadUserData() {
   gameState.vrmModel = getStorage('kanji_jet_vrm_model', 'men');
   gameState.vrmExpression = getStorage('kanji_jet_vrm_expr', 'happy');
   gameState.costume = getStorage('kanji_jet_costume', {
+    catOutfit: 'default',
     catAccessory: 'none',
     catAura: 'none',
     robotChest: 'smile',
@@ -6008,6 +6014,7 @@ function loadUserData() {
     robotHead: 'none',
     robotAura: 'none'
   });
+  if (!gameState.costume.catOutfit) gameState.costume.catOutfit = 'default';
   gameState.avatar = getStorage('kanji_jet_avatar', { base: 0, hair: 0, suit: 0, accessory: 0 });
   gameState.myGrade = parseInt(getStorage('kanji_jet_my_grade', '1'), 10) || 1;
   gameState.soundEnabled = getStorage('kanji_jet_sound', true);
@@ -6044,7 +6051,8 @@ function updatePilotDisplay() {
       elBadge.style.borderColor = '#00ff88';
       elBadge.style.color = '#00ff88';
     } else if (isVrm) {
-      elBadge.textContent = '🐱 3Dマスコット';
+      const curOutfit = window.CAT_COSTUMES_DATA?.outfit?.find(o => o.id === gameState.costume.catOutfit);
+      elBadge.textContent = (curOutfit && curOutfit.id !== 'default') ? `🐱 ${curOutfit.name}` : '🐱 3Dマスコット';
       elBadge.style.borderColor = '#00e5ff';
       elBadge.style.color = '#00e5ff';
     } else {
@@ -8602,7 +8610,7 @@ const VRM_AVATAR_CONFIG = {
 
 // --- アバター・きせかえ UI 制御システム ---
 let currentCostumeSubTab = 'cat'; // 'cat' or 'robot'
-let currentCatCostumeCat = 'accessory'; // 'accessory' or 'aura'
+let currentCatCostumeCat = 'outfit'; // 'outfit', 'accessory', or 'aura'
 let currentRobotCostumeCat = 'chest'; // 'chest', 'color', 'head', 'aura'
 
 function selectAvatarType(type = 'vrm') {
@@ -8808,6 +8816,9 @@ function switchCostumeSubTab(subTab) {
 
   if (subTab === 'cat') {
     renderCatCostumeGrid();
+    if (window.VrmAvatarManager) {
+      window.VrmAvatarManager.applyCatCostume(gameState.costume);
+    }
   } else {
     renderRobotCostumeGrid();
   }
@@ -8817,8 +8828,10 @@ function switchCostumeSubTab(subTab) {
 // 🐱 ネコ用きせかえカテゴリ切り替え＆レンダリング
 function switchCatCostumeCat(cat) {
   currentCatCostumeCat = cat;
+  const btnOutfit = document.getElementById('cat-costume-cat-outfit');
   const btnAcc = document.getElementById('cat-costume-cat-acc');
   const btnAura = document.getElementById('cat-costume-cat-aura');
+  if (btnOutfit) btnOutfit.classList.toggle('active', cat === 'outfit');
   if (btnAcc) btnAcc.classList.toggle('active', cat === 'accessory');
   if (btnAura) btnAura.classList.toggle('active', cat === 'aura');
   renderCatCostumeGrid();
@@ -8829,15 +8842,23 @@ function renderCatCostumeGrid() {
   const container = document.getElementById('cat-costume-items-grid');
   if (!container || !window.CAT_COSTUMES_DATA) return;
   const items = window.CAT_COSTUMES_DATA[currentCatCostumeCat] || [];
-  const currentSelected = currentCatCostumeCat === 'accessory' 
-    ? gameState.costume.catAccessory 
-    : gameState.costume.catAura;
+  const currentSelected = currentCatCostumeCat === 'outfit'
+    ? (gameState.costume.catOutfit || 'default')
+    : (currentCatCostumeCat === 'accessory'
+      ? (gameState.costume.catAccessory || 'none')
+      : (gameState.costume.catAura || 'none'));
 
   container.innerHTML = items.map(item => {
     const isSelected = item.id === currentSelected;
+    const iconHtml = item.iconImg
+      ? `<div style="position: relative; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; margin-bottom: 3px;">
+           <img src="${item.iconImg}" style="max-width: 46px; max-height: 46px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));" alt="${item.name}">
+         </div>`
+      : `<div class="costume-item-icon">${item.icon}</div>`;
+
     return `
       <div class="costume-item-card ${isSelected ? 'active' : ''}" onclick="selectCatCostume('${currentCatCostumeCat}', '${item.id}')">
-        <div class="costume-item-icon">${item.icon}</div>
+        ${iconHtml}
         <div class="costume-item-name">${item.name}</div>
         <div class="costume-item-desc">${item.desc}</div>
       </div>
@@ -8846,7 +8867,9 @@ function renderCatCostumeGrid() {
 }
 
 function selectCatCostume(cat, id) {
-  if (cat === 'accessory') {
+  if (cat === 'outfit') {
+    gameState.costume.catOutfit = id;
+  } else if (cat === 'accessory') {
     gameState.costume.catAccessory = id;
   } else if (cat === 'aura') {
     gameState.costume.catAura = id;
@@ -8856,6 +8879,7 @@ function selectCatCostume(cat, id) {
   if (window.VrmAvatarManager) {
     window.VrmAvatarManager.applyCatCostume(gameState.costume);
   }
+  updatePilotDisplay();
   if (window.playSound) playSound('click');
 }
 
