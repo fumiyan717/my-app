@@ -4810,25 +4810,36 @@ class VrmAvatarController {
     if (!vrm || !vrm.expressionManager) return;
     const em = vrm.expressionManager;
 
-    const allPresets = ['happy', 'neutral', 'surprised', 'angry', 'relaxed', 'sad', 'blinkLeft', 'blinkRight', 'blink', 'aa', 'oh'];
-    allPresets.forEach(p => {
-      try { em.setValue(p, 0); } catch(e) {}
-    });
-
-    if (exprName === 'happy') {
-      em.setValue('happy', 1.0);
-    } else if (exprName === 'neutral') {
-      em.setValue('relaxed', 1.0);
-    } else if (exprName === 'surprised') {
-      em.setValue('surprised', 1.0);
-      em.setValue('oh', 0.4);
-    } else if (exprName === 'angry') {
-      em.setValue('angry', 1.0);
-    } else if (exprName === 'wink') {
-      em.setValue('blinkLeft', 1.0);
-      em.setValue('happy', 0.6);
+    // 全ての Expression を確実にリセット（合成による頂点突き抜け・めり込み崩壊を完全防止）
+    if (typeof em.resetValues === 'function') {
+      em.resetValues();
     } else {
-      try { em.setValue(exprName, 1.0); } catch(e) {}
+      const allPresets = ['happy', 'neutral', 'surprised', 'angry', 'relaxed', 'sad', 'blinkLeft', 'blinkRight', 'blink', 'aa', 'ih', 'ou', 'ee', 'oh'];
+      allPresets.forEach(p => {
+        try { em.setValue(p, 0); } catch(e) {}
+      });
+    }
+
+    // 単一プリセットで美しく適用（他プリセットと重複させない）
+    switch (exprName) {
+      case 'happy':
+        em.setValue('happy', 1.0); // ニッコリ笑顔（Fcl_ALL_Joy）
+        break;
+      case 'neutral':
+        em.setValue('relaxed', 1.0); // つぶらな瞳・穏やかな愛らしい顔（Fcl_ALL_Fun）
+        break;
+      case 'surprised':
+        em.setValue('surprised', 1.0); // 目を見開いたびっくり顔（Fcl_ALL_Surprised）
+        break;
+      case 'angry':
+        em.setValue('angry', 1.0); // キリッと凛々しい気合顔（Fcl_ALL_Angry）
+        break;
+      case 'wink':
+        em.setValue('blinkLeft', 1.0); // パチンと左目を閉じる完璧なウインク（Fcl_EYE_Close_L）
+        break;
+      default:
+        try { em.setValue(exprName, 1.0); } catch(e) {}
+        break;
     }
     em.update();
   }
@@ -4879,11 +4890,13 @@ class VrmAvatarController {
       const vrm = this.currentVrm;
       const em = vrm.expressionManager;
 
-      // 1. 自動まばたき
-      if (this.currentExpression !== 'wink') {
+      // 1. 自動まばたき（目が開いている表情 neutral の時だけ自然に行う）
+      // happy（細目笑顔）、wink（ウインク）、surprised（見開き）の時はまばたきを止めて顔の破綻を完全に防止
+      const canBlink = (this.currentExpression === 'neutral') && !this.actionState;
+      if (canBlink) {
         this.blinkTimer += delta;
-        if (this.blinkTimer > 3.2) {
-          const blinkProgress = (this.blinkTimer - 3.2) / this.blinkDuration;
+        if (this.blinkTimer > 3.5) {
+          const blinkProgress = (this.blinkTimer - 3.5) / this.blinkDuration;
           if (blinkProgress <= 1.0) {
             const val = Math.sin(blinkProgress * Math.PI);
             em.setValue('blink', val);
@@ -4894,6 +4907,13 @@ class VrmAvatarController {
             this.blinkTimer = Math.random() * 1.5;
           }
         }
+      } else {
+        // まばたき無効時は blink をゼロにして眼球めり込みを防止
+        if (em && em.getValue('blink') > 0) {
+          em.setValue('blink', 0);
+          em.update();
+        }
+        this.blinkTimer = 0;
       }
 
       // 2. 待機呼吸モーション
@@ -4921,14 +4941,16 @@ class VrmAvatarController {
           const hop = Math.sin((t / 0.9) * Math.PI) * 0.12;
           if (vrm.scene) vrm.scene.position.y = hop;
           if (head) {
-            head.rotation.x = 0.15 * Math.sin(t * 18);
-            head.rotation.y = 0.2 * Math.sin(t * 14);
+            head.rotation.x = 0.12 * Math.sin(t * 18);
+            head.rotation.y = 0.18 * Math.sin(t * 14);
           }
-          if (leftUpperArm) leftUpperArm.rotation.z = -1.1 - Math.sin(t * 18) * 0.4;
-          if (rightUpperArm) rightUpperArm.rotation.z = 1.1 + Math.sin(t * 18) * 0.4;
+          if (leftUpperArm) leftUpperArm.rotation.z = -1.1 - Math.sin(t * 18) * 0.35;
+          if (rightUpperArm) rightUpperArm.rotation.z = 1.1 + Math.sin(t * 18) * 0.35;
           if (em) {
-            em.setValue('aa', Math.abs(Math.sin(t * 14)) * 0.9);
-            em.setValue('happy', 1.0);
+            // 他の全体表情と干渉させず、口の開閉（aa）のみを安全に動かす
+            if (typeof em.resetValues === 'function') em.resetValues();
+            const mouthVal = Math.abs(Math.sin(t * 14)) * 0.65;
+            em.setValue('aa', mouthVal);
             em.update();
           }
         } else {
