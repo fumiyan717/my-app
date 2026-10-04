@@ -3302,10 +3302,11 @@
   </audio>
 
 <div id="game-container">
-  <!-- 問題画面の背景動画 (assets/問題背景.mp4) -->
-  <video id="game-bg-video" class="game-bg-video" autoplay loop muted playsinline preload="auto">
-    <source src="assets/問題背景.mp4" type="video/mp4">
-    <source src="問題背景.mp4" type="video/mp4">
+  <!-- 問題画面の背景動画 (問題背景２.mp4 / assets/question_bg.mp4) -->
+  <video id="game-bg-video" class="game-bg-video" autoplay loop muted playsinline preload="auto" poster="assets/question_bg_poster.jpg">
+    <source src="assets/question_bg.mp4" type="video/mp4">
+    <source src="assets/問題背景２.mp4" type="video/mp4">
+    <source src="問題背景２.mp4" type="video/mp4">
   </video>
   <div class="game-bg-overlay"></div>
 
@@ -5992,6 +5993,11 @@ function initBattleSession() {
   } catch (e) {
     console.warn('updateBgmState failed:', e);
   }
+  try {
+    playBackgroundVideo();
+  } catch (e) {
+    console.warn('playBackgroundVideo failed:', e);
+  }
   loadQuestion();
 }
 
@@ -6402,6 +6408,11 @@ function recordMistake(kanji, word, kana) {
 
 function showResultModal(cleared) {
   clearInterval(gameState.timerInterval);
+  try {
+    pauseBackgroundVideo();
+  } catch (e) {
+    console.warn('pauseBackgroundVideo failed:', e);
+  }
   updateBgmState('home');
 
   const modal = document.getElementById('result-modal');
@@ -6502,6 +6513,12 @@ function returnToTitle() {
 
   const startModal = document.getElementById('start-modal');
   if (startModal) startModal.style.display = 'flex';
+
+  try {
+    pauseBackgroundVideo();
+  } catch (e) {
+    console.warn('pauseBackgroundVideo failed:', e);
+  }
 
   updateBgmState('home');
   updateHomeStats();
@@ -7651,12 +7668,54 @@ function changeMyGrade(val) {
 }
 
 // --------------------------------------------------------------------------
+// 背景動画管理（問題背景２.mp4 の軽量ループ再生制御）
+// --------------------------------------------------------------------------
+function initBackgroundVideo() {
+  const video = document.getElementById('game-bg-video');
+  if (!video) return;
+  video.loop = true;
+  video.muted = true;
+  // ループ再生の確実化 (endedイベントフォールバック)
+  video.addEventListener('ended', () => {
+    video.currentTime = 0;
+    const p = video.play();
+    if (p !== undefined) p.catch(() => {});
+  });
+}
+
+function playBackgroundVideo() {
+  const video = document.getElementById('game-bg-video');
+  if (!video) return;
+  try {
+    const p = video.play();
+    if (p !== undefined) {
+      p.catch(err => {
+        console.warn('Game background video autoplay prevented:', err);
+      });
+    }
+  } catch (e) {
+    console.warn('playBackgroundVideo error:', e);
+  }
+}
+
+function pauseBackgroundVideo() {
+  const video = document.getElementById('game-bg-video');
+  if (!video) return;
+  try {
+    video.pause();
+  } catch (e) {
+    console.warn('pauseBackgroundVideo error:', e);
+  }
+}
+
+// --------------------------------------------------------------------------
 // 初期化
 // --------------------------------------------------------------------------
 function initGame() {
   try { loadUserData(); } catch (e) { console.warn('loadUserData error:', e); }
   try { initCanvas(); } catch (e) { console.warn('initCanvas error:', e); }
   try { initInputListeners(); } catch (e) { console.warn('initInputListeners error:', e); }
+  try { initBackgroundVideo(); } catch (e) { console.warn('initBackgroundVideo error:', e); }
 
   const soundBtn = document.getElementById('sound-toggle-btn');
   if (soundBtn) {
