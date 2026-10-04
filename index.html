@@ -1834,7 +1834,37 @@
       color: #fff;
       box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
     }
+    .vrm-model-btn {
+      flex: 1;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      border: 1.5px solid rgba(0, 229, 255, 0.35);
+      border-radius: 8px;
+      background: rgba(10, 25, 55, 0.7);
+      color: #8cb0d0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .vrm-model-btn:hover {
+      border-color: #00e5ff;
+      color: #fff;
+    }
+    .vrm-model-btn.active {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(0, 150, 255, 0.4));
+      border-color: #00e5ff;
+      color: #00ffff;
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
+    }
     @keyframes bounceDog {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-8px) scale(1.08); }
+    }
+    @keyframes bounceNeko {
       0% { transform: translateY(0) scale(1); }
       100% { transform: translateY(-8px) scale(1.08); }
     }
@@ -4168,7 +4198,7 @@
                   <!-- JS動的レンダリング -->
                 </div>
                 <div id="avatar-preview-badge" style="position: absolute; bottom: 4px; background: rgba(5, 12, 24, 0.9); border: 1px solid #00ff88; color: #00ff88; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(0,0,0,0.6);">
-                  🐶 3Dマスコット
+                  🐱 3Dマスコット
                 </div>
               </div>
 
@@ -4211,22 +4241,32 @@
               <!-- アバタータイプ切り替えバー -->
               <div class="avatar-type-bar">
                 <button class="avatar-type-btn active" id="btn-type-vrm" onclick="selectAvatarType('vrm')">
-                  🐶 3D ドッグ・パイロット
+                  🐱 3D ネコ・パイロット
                 </button>
                 <button class="avatar-type-btn" id="btn-type-costume" onclick="onCostumePrepClick()" style="opacity: 0.85;">
                   👗 きせかえ <span class="avatar-prep-badge" style="background: rgba(255,215,0,0.15); color: #ffd700; border-color: rgba(255,215,0,0.4); font-size: 10px; padding: 1px 6px; margin-left: 6px;">準備中</span>
                 </button>
               </div>
 
-              <!-- 1. 3D VRMモデル (dog-mascot.vrm) 設定パネル -->
+              <!-- 1. 3D VRMモデル (neko-mascot  men.vrm / neko-mascot women.vrm) 設定パネル -->
               <div id="vrm-avatar-panel" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- モデル選択バー（Men / Women 切り替え） -->
+                <div style="display: flex; gap: 8px;">
+                  <button class="vrm-model-btn active" id="btn-vrm-men" onclick="switchVrmModel('men')" title="neko-mascot  men.vrm を選択">
+                    👦 ネコ (Men)
+                  </button>
+                  <button class="vrm-model-btn" id="btn-vrm-women" onclick="switchVrmModel('women')" title="neko-mascot women.vrm を選択">
+                    👧 ネコ (Women)
+                  </button>
+                </div>
+
                 <!-- 3D ビューポート（全身が美しく収まる320px） -->
                 <div id="vrm-viewer-container" style="position: relative; width: 100%; height: 320px; min-height: 300px; background: radial-gradient(circle at 50% 50%, rgba(13, 30, 60, 0.9) 0%, rgba(5, 12, 25, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.18);">
                   <div id="vrm-loading-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(10, 25, 50, 0.95) 0%, rgba(5, 12, 25, 0.98) 100%); z-index: 10; transition: opacity 0.3s ease;">
                     <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
-                      <img src="assets/dog-mascot-icon.png" style="width: 76px; height: 76px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.6)); animation: bounceDog 1.2s infinite alternate;" alt="dog-mascot">
+                      <img id="vrm-loading-img" src="assets/neko-men-icon.png" style="width: 76px; height: 76px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.6)); animation: bounceNeko 1.2s infinite alternate;" alt="neko-mascot">
                     </div>
-                    <div id="vrm-loading-text" style="font-size: 13px; color: #00e5ff; font-weight: bold; margin-top: 8px;">🐶 3D ドッグ・マスコット 読込中...</div>
+                    <div id="vrm-loading-text" style="font-size: 13px; color: #00e5ff; font-weight: bold; margin-top: 8px;">🐱 3D ネコ・マスコット 読込中...</div>
                     <div style="width: 180px; height: 6px; background: rgba(255,255,255,0.12); border-radius: 3px; margin-top: 7px; overflow: hidden; border: 1px solid rgba(0,229,255,0.3);">
                       <div id="vrm-loading-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00e5ff, #ffd700); transition: width 0.2s ease;"></div>
                     </div>
@@ -4238,8 +4278,8 @@
                   </div>
                   <!-- アクションボタン（ビューポート内） -->
                   <div style="position: absolute; bottom: 8px; right: 10px; display: flex; gap: 6px; z-index: 5;">
-                    <button class="action-sub-btn" onclick="triggerVrmAction('bark')" style="padding: 5px 12px; font-size: 11.5px; background: rgba(255, 215, 0, 0.2); border-color: #ffd700; color: #ffd700; font-weight: bold;" title="元気にワン！とあいさつ">
-                      🐾 ワン！とごあいさつ
+                    <button class="action-sub-btn" onclick="triggerVrmAction('meow')" style="padding: 5px 12px; font-size: 11.5px; background: rgba(255, 215, 0, 0.2); border-color: #ffd700; color: #ffd700; font-weight: bold;" title="元気にニャー！とあいさつ">
+                      🐾 ニャー！とごあいさつ
                     </button>
                     <button class="action-sub-btn" onclick="triggerVrmAction('reset')" style="padding: 5px 10px; font-size: 11.5px;" title="正面に向きを戻す">
                       🔄 正面
@@ -4251,14 +4291,14 @@
                 <div style="background: rgba(10, 20, 42, 0.7); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 10px; padding: 10px 12px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <div style="font-size: 11.5px; color: #00e5ff; font-weight: bold; letter-spacing: 0.5px;">🎭 表情・リアクション設定</div>
-                    <div style="font-size: 10.5px; color: #ffd700;">✨ 自動まばたき＆耳・しっぽスプリング連動</div>
+                    <div style="font-size: 10.5px; color: #ffd700;">✨ 自動まばたき＆猫耳・しっぽスプリング連動</div>
                   </div>
                   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="vrm-expr-btn active" id="expr-btn-happy" onclick="setAvatarExpression('happy')">
                       😊 えがお
                     </button>
                     <button class="vrm-expr-btn" id="expr-btn-neutral" onclick="setAvatarExpression('neutral')">
-                      🐶 つぶらな瞳
+                      🐱 おだやか
                     </button>
                     <button class="vrm-expr-btn" id="expr-btn-surprised" onclick="setAvatarExpression('surprised')">
                       😲 びっくり
@@ -4275,10 +4315,10 @@
                 <!-- パイロットステータスカード -->
                 <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #8cb0d0;">
                   <div>
-                    <span style="color: #fff; font-weight: bold;">🐕 機長マスコット:</span> dog-mascot
+                    <span style="color: #fff; font-weight: bold;">🐱 機長マスコット:</span> <span id="vrm-status-model-name">neko men</span>
                     <span style="margin-left: 8px; color: #ffd700; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255,215,0,0.3); padding: 1px 6px; border-radius: 4px;">VRM 1.0</span>
                   </div>
-                  <div style="color: #64748b;">
+                  <div style="color: #64748b;" id="vrm-status-author">
                     Author: fumiyan
                   </div>
                 </div>
@@ -4497,6 +4537,43 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
+// 🐱 3D ネコ・マスコット モデル定義
+export const VRM_MODELS_DATA = {
+  men: {
+    id: 'men',
+    name: 'neko men',
+    displayName: 'ネコ (Men)',
+    file: 'assets/neko-mascot  men.vrm',
+    url: encodeURI('assets/neko-mascot  men.vrm'),
+    icon: 'assets/neko-men-icon.png',
+    thumb: 'assets/neko-men-thumb.png',
+    sizeMb: '14.4',
+    approxBytes: 15051204,
+    height: 1.84,
+    targetY: 0.88,
+    cameraY: 0.95,
+    cameraDist: 3.7,
+    author: 'fumiyan'
+  },
+  women: {
+    id: 'women',
+    name: 'neko women',
+    displayName: 'ネコ (Women)',
+    file: 'assets/neko-mascot women.vrm',
+    url: encodeURI('assets/neko-mascot women.vrm'),
+    icon: 'assets/neko-women-icon.png',
+    thumb: 'assets/neko-women-thumb.png',
+    sizeMb: '15.0',
+    approxBytes: 15742480,
+    height: 1.67,
+    targetY: 0.78,
+    cameraY: 0.85,
+    cameraDist: 3.4,
+    author: 'fumiyan'
+  }
+};
+window.VRM_MODELS_DATA = VRM_MODELS_DATA;
+
 class VrmAvatarController {
   constructor() {
     this.container = null;
@@ -4509,12 +4586,10 @@ class VrmAvatarController {
     this.animationFrameId = null;
     this.isInitialized = false;
     
-    // プリロード＆ローディング状態管理
-    this.isPreloading = false;
-    this.isLoaded = false;
-    this.preloadedVrm = null;
-    this.loadProgressPercent = 0;
-    this.modelUrl = 'assets/dog-mascot.vrm';
+    // モデル管理
+    this.currentModelId = 'men';
+    this.loadedVrms = { men: null, women: null };
+    this.loadingStates = { men: false, women: false };
     this.currentExpression = 'happy';
     
     // 自動まばたき
@@ -4526,84 +4601,147 @@ class VrmAvatarController {
     this.actionTime = 0;
   }
 
-  // アプリ起動時にバックグラウンドで事前ダウンロード＆パース
-  preload(url = this.modelUrl) {
-    if (this.isPreloading || this.isLoaded) return;
-    this.isPreloading = true;
+  // アプリ起動時またはモデル切り替え時に事前ダウンロード＆パース
+  loadModel(modelId = this.currentModelId, onComplete = null) {
+    const modelInfo = VRM_MODELS_DATA[modelId] || VRM_MODELS_DATA.men;
+    if (this.loadedVrms[modelId]) {
+      if (onComplete) onComplete(this.loadedVrms[modelId]);
+      return Promise.resolve(this.loadedVrms[modelId]);
+    }
+
+    if (this.loadingStates[modelId]) {
+      return;
+    }
+    this.loadingStates[modelId] = true;
+
+    // ローディング表示（現在選択中のモデルの場合）
+    if (this.currentModelId === modelId) {
+      this.showLoadingOverlay(true, modelInfo);
+    }
 
     const loader = new GLTFLoader();
     loader.register((parser) => new VRMLoaderPlugin(parser));
 
-    loader.load(
-      url,
-      (gltf) => {
-        const vrm = gltf.userData.vrm;
-        if (!vrm) {
-          console.error('VRM data not found in gltf');
-          this.isPreloading = false;
-          this.showLoadingError('VRMデータの展開に失敗しました');
-          return;
-        }
-
-        // VRM 1.0 最適化
-        try {
-          if (VRMUtils && typeof VRMUtils.removeUnnecessaryVertices === 'function') {
-            VRMUtils.removeUnnecessaryVertices(gltf.scene);
+    return new Promise((resolve, reject) => {
+      loader.load(
+        modelInfo.url,
+        (gltf) => {
+          const vrm = gltf.userData.vrm;
+          if (!vrm) {
+            console.error('VRM data not found in gltf');
+            this.loadingStates[modelId] = false;
+            this.showLoadingError('VRMデータの展開に失敗しました');
+            reject(new Error('VRM data not found'));
+            return;
           }
-          if (VRMUtils && typeof VRMUtils.removeUnnecessaryJoints === 'function') {
-            VRMUtils.removeUnnecessaryJoints(gltf.scene);
+
+          // VRM 1.0 最適化
+          try {
+            if (VRMUtils && typeof VRMUtils.removeUnnecessaryVertices === 'function') {
+              VRMUtils.removeUnnecessaryVertices(gltf.scene);
+            }
+            if (VRMUtils && typeof VRMUtils.removeUnnecessaryJoints === 'function') {
+              VRMUtils.removeUnnecessaryJoints(gltf.scene);
+            }
+          } catch (optErr) {
+            console.warn('VRM optimization warning:', optErr);
           }
-        } catch (optErr) {
-          console.warn('VRM optimization warning:', optErr);
-        }
 
-        // メッシュのカメラ外判定による非表示バグを防止
-        vrm.scene.traverse((obj) => {
-          if (obj.isMesh) {
-            obj.frustumCulled = false;
-            obj.castShadow = true;
-            obj.receiveShadow = true;
+          // メッシュのカメラ外判定による非表示バグを防止
+          vrm.scene.traverse((obj) => {
+            if (obj.isMesh) {
+              obj.frustumCulled = false;
+              obj.castShadow = true;
+              obj.receiveShadow = true;
+            }
+          });
+
+          this.loadedVrms[modelId] = vrm;
+          this.loadingStates[modelId] = false;
+
+          // 自然なアイドル立ちポーズの初期化
+          this.applyNaturalPose(vrm);
+
+          // 現在選択中のモデルであれば即座にシーンにアタッチ
+          if (this.currentModelId === modelId) {
+            this.updateOverlayProgress(100, modelInfo.sizeMb, modelInfo.sizeMb);
+            if (this.scene) {
+              this.attachVrmToScene(vrm, modelId);
+            }
           }
-        });
 
-        this.preloadedVrm = vrm;
-        this.isLoaded = true;
-        this.isPreloading = false;
-        this.loadProgressPercent = 100;
-        this.updateOverlayProgress(100, '14.6', '14.6');
+          if (onComplete) onComplete(vrm);
+          resolve(vrm);
+        },
+        (progress) => {
+          if (this.currentModelId !== modelId) return;
+          let loadedMb = 0;
+          let totalMb = parseFloat(modelInfo.sizeMb);
+          let percent = 0;
 
-        // 自然なアイドル立ちポーズの初期化
-        this.applyNaturalPose(vrm);
-        this.setExpression(window.gameState?.vrmExpression || 'happy');
+          if (progress.total && progress.total > 0) {
+            loadedMb = (progress.loaded / (1024 * 1024)).toFixed(1);
+            totalMb = (progress.total / (1024 * 1024)).toFixed(1);
+            percent = Math.min(99, Math.round((progress.loaded / progress.total) * 100));
+          } else if (progress.loaded) {
+            loadedMb = (progress.loaded / (1024 * 1024)).toFixed(1);
+            percent = Math.min(98, Math.round((progress.loaded / modelInfo.approxBytes) * 100));
+          }
 
-        // もし既にコンテナが初期化されて待機中なら即座にシーンにアタッチ
-        if (this.scene) {
-          this.attachVrmToScene(vrm);
+          this.updateOverlayProgress(percent, loadedMb, totalMb);
+        },
+        (error) => {
+          console.error(`VRM load error for ${modelId}:`, error);
+          this.loadingStates[modelId] = false;
+          if (this.currentModelId === modelId) {
+            this.showLoadingError(error?.message || '3Dモデル読込に失敗しました');
+          }
+          reject(error);
         }
-      },
-      (progress) => {
-        let loadedMb = 0;
-        let totalMb = 14.6;
-        let percent = 0;
+      );
+    });
+  }
 
-        if (progress.total && progress.total > 0) {
-          loadedMb = (progress.loaded / (1024 * 1024)).toFixed(1);
-          totalMb = (progress.total / (1024 * 1024)).toFixed(1);
-          percent = Math.min(99, Math.round((progress.loaded / progress.total) * 100));
-        } else if (progress.loaded) {
-          loadedMb = (progress.loaded / (1024 * 1024)).toFixed(1);
-          percent = Math.min(98, Math.round((progress.loaded / 14582844) * 100));
+  preload() {
+    const initModel = window.gameState?.vrmModel || 'men';
+    this.currentModelId = initModel;
+    this.loadModel(initModel);
+  }
+
+  switchModel(modelId) {
+    if (!VRM_MODELS_DATA[modelId]) return;
+    this.currentModelId = modelId;
+
+    if (this.loadedVrms[modelId]) {
+      // 既に読み込み済みなら瞬時に切り替え
+      this.attachVrmToScene(this.loadedVrms[modelId], modelId);
+    } else {
+      // 未ロードならロード開始
+      this.showLoadingOverlay(true, VRM_MODELS_DATA[modelId]);
+      this.loadModel(modelId, (vrm) => {
+        if (this.currentModelId === modelId && this.scene) {
+          this.attachVrmToScene(vrm, modelId);
         }
+      });
+    }
+  }
 
-        this.loadProgressPercent = percent;
-        this.updateOverlayProgress(percent, loadedMb, totalMb);
-      },
-      (error) => {
-        console.error('VRM load error:', error);
-        this.isPreloading = false;
-        this.showLoadingError(error?.message || '3Dモデル読込に失敗しました');
-      }
-    );
+  showLoadingOverlay(show, modelInfo = VRM_MODELS_DATA[this.currentModelId]) {
+    const overlay = document.getElementById('vrm-loading-overlay');
+    const imgEl = document.getElementById('vrm-loading-img');
+    const textEl = document.getElementById('vrm-loading-text');
+    if (!overlay) return;
+
+    if (show) {
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '1';
+      if (imgEl && modelInfo) imgEl.src = modelInfo.icon;
+      if (textEl && modelInfo) textEl.textContent = `🐱 3D ${modelInfo.displayName} 読込中...`;
+      this.updateOverlayProgress(0, 0, modelInfo ? modelInfo.sizeMb : 15);
+    } else {
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.style.display = 'none'; }, 250);
+    }
   }
 
   showLoadingError(msg) {
@@ -4624,16 +4762,9 @@ class VrmAvatarController {
   }
 
   retry() {
-    this.isPreloading = false;
-    this.isLoaded = false;
-    const text = document.getElementById('vrm-loading-text');
-    const pEl = document.getElementById('vrm-loading-progress');
-    if (text) {
-      text.textContent = '🐶 3D ドッグ・マスコット 読込中...';
-      text.style.color = '#00e5ff';
-    }
-    if (pEl) pEl.textContent = '';
-    this.preload();
+    this.loadingStates[this.currentModelId] = false;
+    this.loadedVrms[this.currentModelId] = null;
+    this.loadModel(this.currentModelId);
   }
 
   init(containerId = 'vrm-viewer-container') {
@@ -4648,9 +4779,10 @@ class VrmAvatarController {
       // 1. Scene
       this.scene = new THREE.Scene();
 
-      // 2. Camera（全身がすっぽり美しく収まる視野角＆距離）
-      this.camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 20.0);
-      this.camera.position.set(0, 0.48, 2.45);
+      // 2. Camera（等身大モデルが頭から足まで美しく収まる30度FOV）
+      const modelInfo = VRM_MODELS_DATA[this.currentModelId] || VRM_MODELS_DATA.men;
+      this.camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 25.0);
+      this.camera.position.set(0, modelInfo.cameraY, modelInfo.cameraDist);
 
       // 3. Renderer
       this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
@@ -4673,26 +4805,26 @@ class VrmAvatarController {
       this.controls = new OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.08;
-      this.controls.target.set(0, 0.44, 0); // モデルの中心
+      this.controls.target.set(0, modelInfo.targetY, 0); // モデルの中心
       this.controls.minDistance = 0.8;
-      this.controls.maxDistance = 4.2;
-      this.controls.maxPolarAngle = Math.PI * 0.60;
-      this.controls.minPolarAngle = Math.PI * 0.12;
+      this.controls.maxDistance = 6.0;
+      this.controls.maxPolarAngle = Math.PI * 0.65;
+      this.controls.minPolarAngle = Math.PI * 0.10;
       this.controls.update();
 
       // 5. Lights（全身が鮮明に明るく見える4点ライト構成）
-      const ambLight = new THREE.AmbientLight(0xffffff, 1.2);
+      const ambLight = new THREE.AmbientLight(0xffffff, 1.25);
       this.scene.add(ambLight);
 
       const hemiLight = new THREE.HemisphereLight(0xffffff, 0x223355, 1.8);
       this.scene.add(hemiLight);
 
-      const dirLight = new THREE.DirectionalLight(0xffffff, 2.2);
-      dirLight.position.set(1.5, 3.0, 2.2);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 2.3);
+      dirLight.position.set(1.5, 3.5, 2.5);
       this.scene.add(dirLight);
 
       const rimLight = new THREE.DirectionalLight(0x00e5ff, 1.6);
-      rimLight.position.set(-1.8, 1.5, -1.2);
+      rimLight.position.set(-1.8, 1.8, -1.5);
       this.scene.add(rimLight);
 
       // 6. Resize Observer
@@ -4705,18 +4837,13 @@ class VrmAvatarController {
       this.isInitialized = true;
     }
 
-    // すでにプリロードが完了していれば即座にシーンにアタッチ
-    if (this.isLoaded && this.preloadedVrm) {
-      this.attachVrmToScene(this.preloadedVrm);
+    const currentVrm = this.loadedVrms[this.currentModelId];
+    if (currentVrm) {
+      this.attachVrmToScene(currentVrm, this.currentModelId);
     } else {
-      const overlay = document.getElementById('vrm-loading-overlay');
-      if (overlay) {
-        overlay.style.display = 'flex';
-        overlay.style.opacity = '1';
-        this.updateOverlayProgress(this.loadProgressPercent);
-      }
-      if (!this.isPreloading) {
-        this.preload();
+      this.showLoadingOverlay(true);
+      if (!this.loadingStates[this.currentModelId]) {
+        this.loadModel(this.currentModelId);
       }
     }
 
@@ -4724,7 +4851,7 @@ class VrmAvatarController {
     this.start();
   }
 
-  attachVrmToScene(vrm) {
+  attachVrmToScene(vrm, modelId = this.currentModelId) {
     if (!this.scene) return;
     if (this.currentVrm) {
       this.scene.remove(this.currentVrm.scene);
@@ -4742,24 +4869,32 @@ class VrmAvatarController {
 
     this.scene.add(vrm.scene);
 
+    // カメラとコントローラのフィッティング
+    this.adjustCameraForModel(modelId);
+
     // 自然なポーズと表情を再適用
     this.applyNaturalPose(vrm);
     this.setExpression(window.gameState?.vrmExpression || 'happy');
 
     // オーバーレイを即座にフェードアウト
-    const overlay = document.getElementById('vrm-loading-overlay');
-    if (overlay) {
-      overlay.style.opacity = '0';
-      setTimeout(() => { overlay.style.display = 'none'; }, 250);
-    }
-
+    this.showLoadingOverlay(false);
     this.start();
+  }
+
+  adjustCameraForModel(modelId = this.currentModelId) {
+    const modelInfo = VRM_MODELS_DATA[modelId] || VRM_MODELS_DATA.men;
+    if (this.camera && this.controls) {
+      this.controls.target.set(0, modelInfo.targetY, 0);
+      this.camera.position.set(0, modelInfo.cameraY, modelInfo.cameraDist);
+      this.controls.update();
+    }
   }
 
   updateOverlayProgress(percent, loadedMb, totalMb) {
     const textEl = document.getElementById('vrm-loading-text');
     const pEl = document.getElementById('vrm-loading-progress');
     const barEl = document.getElementById('vrm-loading-bar');
+    const modelInfo = VRM_MODELS_DATA[this.currentModelId];
 
     if (barEl) {
       barEl.style.width = `${percent}%`;
@@ -4771,8 +4906,8 @@ class VrmAvatarController {
         pEl.textContent = `読込中 ${percent}%`;
       }
     }
-    if (textEl && percent > 0 && percent < 100) {
-      textEl.textContent = '🐶 3D ドッグ・マスコット 読込中...';
+    if (textEl && percent > 0 && percent < 100 && modelInfo) {
+      textEl.textContent = `🐱 3D ${modelInfo.displayName} 読込中...`;
     }
   }
 
@@ -4806,11 +4941,11 @@ class VrmAvatarController {
 
   setExpression(exprName) {
     this.currentExpression = exprName;
-    const vrm = this.currentVrm || this.preloadedVrm;
+    const vrm = this.currentVrm || this.loadedVrms[this.currentModelId];
     if (!vrm || !vrm.expressionManager) return;
     const em = vrm.expressionManager;
 
-    // 全ての Expression を確実にリセット（合成による頂点突き抜け・めり込み崩壊を完全防止）
+    // 全ての Expression を確実にリセット
     if (typeof em.resetValues === 'function') {
       em.resetValues();
     } else {
@@ -4820,22 +4955,22 @@ class VrmAvatarController {
       });
     }
 
-    // 単一プリセットで美しく適用（他プリセットと重複させない）
+    // 単一プリセットで美しく適用
     switch (exprName) {
       case 'happy':
-        em.setValue('happy', 1.0); // ニッコリ笑顔（Fcl_ALL_Joy）
+        em.setValue('happy', 1.0);
         break;
       case 'neutral':
-        em.setValue('relaxed', 1.0); // つぶらな瞳・穏やかな愛らしい顔（Fcl_ALL_Fun）
+        em.setValue('relaxed', 1.0);
         break;
       case 'surprised':
-        em.setValue('surprised', 1.0); // 目を見開いたびっくり顔（Fcl_ALL_Surprised）
+        em.setValue('surprised', 1.0);
         break;
       case 'angry':
-        em.setValue('angry', 1.0); // キリッと凛々しい気合顔（Fcl_ALL_Angry）
+        em.setValue('angry', 1.0);
         break;
       case 'wink':
-        em.setValue('blinkLeft', 1.0); // パチンと左目を閉じる完璧なウインク（Fcl_EYE_Close_L）
+        em.setValue('blinkLeft', 1.0);
         break;
       default:
         try { em.setValue(exprName, 1.0); } catch(e) {}
@@ -4846,16 +4981,12 @@ class VrmAvatarController {
 
   triggerAction(actionName) {
     if (actionName === 'reset') {
-      if (this.controls) {
-        this.camera.position.set(0, 0.48, 2.45);
-        this.controls.target.set(0, 0.44, 0);
-        this.controls.update();
-      }
+      this.adjustCameraForModel(this.currentModelId);
       return;
     }
 
-    if (actionName === 'bark') {
-      this.actionState = 'bark';
+    if (actionName === 'meow' || actionName === 'bark') {
+      this.actionState = 'meow';
       this.actionTime = 0;
       if (window.playSound) window.playSound('click');
     }
@@ -4891,7 +5022,6 @@ class VrmAvatarController {
       const em = vrm.expressionManager;
 
       // 1. 自動まばたき（目が開いている表情 neutral の時だけ自然に行う）
-      // happy（細目笑顔）、wink（ウインク）、surprised（見開き）の時はまばたきを止めて顔の破綻を完全に防止
       const canBlink = (this.currentExpression === 'neutral') && !this.actionState;
       if (canBlink) {
         this.blinkTimer += delta;
@@ -4908,7 +5038,6 @@ class VrmAvatarController {
           }
         }
       } else {
-        // まばたき無効時は blink をゼロにして眼球めり込みを防止
         if (em && em.getValue('blink') > 0) {
           em.setValue('blink', 0);
           em.update();
@@ -4933,8 +5062,8 @@ class VrmAvatarController {
         if (vrm.scene) {
           vrm.scene.position.y = Math.sin(elapsed * 2.0) * 0.008;
         }
-      } else if (this.actionState === 'bark') {
-        // 「ワン！」アクション（元気にぴょん！と跳ねる）
+      } else if (this.actionState === 'meow') {
+        // 「ニャー！」アクション（元気にぴょん！と跳ねて口をニャーと開ける）
         this.actionTime += delta;
         const t = this.actionTime;
         if (t < 0.9) {
@@ -4947,7 +5076,6 @@ class VrmAvatarController {
           if (leftUpperArm) leftUpperArm.rotation.z = -1.1 - Math.sin(t * 18) * 0.35;
           if (rightUpperArm) rightUpperArm.rotation.z = 1.1 + Math.sin(t * 18) * 0.35;
           if (em) {
-            // 他の全体表情と干渉させず、口の開閉（aa）のみを安全に動かす
             if (typeof em.resetValues === 'function') em.resetValues();
             const mouthVal = Math.abs(Math.sin(t * 14)) * 0.65;
             em.setValue('aa', mouthVal);
@@ -4961,7 +5089,7 @@ class VrmAvatarController {
         }
       }
 
-      // 3. VRMのSpringBone（耳やしっぽ等）と表情更新
+      // 3. VRMのSpringBone（猫耳やしっぽ等）と表情更新
       vrm.update(delta);
     }
 
@@ -5347,7 +5475,8 @@ const gameState = {
   pilotAdj: '疾風の',
   pilotNoun: 'ハヤブサ',
   pilotNum: '01号',
-  avatarType: 'vrm', // 'vrm' (3D dog-mascot) or 'classic'
+  avatarType: 'vrm', // 'vrm' (3D neko-mascot: men/women) or 'classic'
+  vrmModel: 'men',   // 'men' (neko-mascot  men.vrm) or 'women' (neko-mascot women.vrm)
   vrmExpression: 'happy',
   avatar: { base: 0, hair: 0, suit: 0, accessory: 0 },
   
@@ -5388,6 +5517,7 @@ function loadUserData() {
   gameState.pilotNum = pilot.num || '01号';
   
   gameState.avatarType = getStorage('kanji_jet_avatar_type', 'vrm');
+  gameState.vrmModel = getStorage('kanji_jet_vrm_model', 'men');
   gameState.vrmExpression = getStorage('kanji_jet_vrm_expr', 'happy');
   gameState.avatar = getStorage('kanji_jet_avatar', { base: 0, hair: 0, suit: 0, accessory: 0 });
   gameState.myGrade = parseInt(getStorage('kanji_jet_my_grade', '1'), 10) || 1;
@@ -5401,7 +5531,7 @@ function loadUserData() {
 function updatePilotDisplay() {
   const fullName = `${gameState.pilotAdj}${gameState.pilotNoun}${gameState.pilotNum}`;
   const isVrm = gameState.avatarType === 'vrm';
-  const prefix = isVrm ? '🐶 ' : '⚡ ';
+  const prefix = isVrm ? '🐱 ' : '⚡ ';
 
   const elHome = document.getElementById('home-pilot-name');
   if (elHome) elHome.textContent = `${prefix}${fullName}`;
@@ -5417,7 +5547,7 @@ function updatePilotDisplay() {
 
   const elBadge = document.getElementById('avatar-preview-badge');
   if (elBadge) {
-    elBadge.textContent = isVrm ? '🐶 3Dマスコット' : '👤 クラシック';
+    elBadge.textContent = isVrm ? '🐱 3Dマスコット' : '👤 クラシック';
     elBadge.style.borderColor = isVrm ? '#00e5ff' : '#ffd700';
     elBadge.style.color = isVrm ? '#00e5ff' : '#ffd700';
   }
@@ -5426,15 +5556,17 @@ function updatePilotDisplay() {
   const elFullPrev = document.getElementById('avatar-full-preview');
 
   if (isVrm) {
+    const curModelId = gameState.vrmModel || 'men';
+    const curIcon = curModelId === 'women' ? 'assets/neko-women-icon.png' : 'assets/neko-men-icon.png';
     if (elHomeIcon) {
-      elHomeIcon.innerHTML = `<img src="assets/dog-mascot-icon.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="3Dパイロット">`;
+      elHomeIcon.innerHTML = `<img src="${curIcon}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="3Dネコパイロット">`;
     }
     if (elFullPrev) {
       elFullPrev.style.opacity = '1';
       elFullPrev.style.filter = 'none';
       elFullPrev.innerHTML = `
         <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-          <img src="assets/dog-mascot-icon.png" style="width: 96px; height: 96px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.4)); animation: bounceDog 3s infinite alternate;" alt="dog-mascot">
+          <img src="${curIcon}" style="width: 96px; height: 96px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.4)); animation: bounceNeko 3s infinite alternate;" alt="neko-mascot">
         </div>`;
     }
   } else {
@@ -7882,6 +8014,7 @@ function saveCustomization() {
   setStorage('kanji_jet_pilot', { adj: gameState.pilotAdj, noun: gameState.pilotNoun, num: gameState.pilotNum });
   setStorage('kanji_jet_avatar', gameState.avatar);
   setStorage('kanji_jet_avatar_type', gameState.avatarType);
+  setStorage('kanji_jet_vrm_model', gameState.vrmModel);
   setStorage('kanji_jet_vrm_expr', gameState.vrmExpression);
 }
 
@@ -7934,9 +8067,20 @@ function renderHangarPreview() {
 // ==========================================================================
 const VRM_AVATAR_CONFIG = {
   status: 'active',
-  modelName: 'dog-mascot',
-  modelUrl: 'assets/dog-mascot.vrm',
-  thumbnailUrl: 'assets/dog-mascot-icon.png',
+  models: {
+    men: {
+      name: 'neko men',
+      displayName: 'ネコ (Men)',
+      file: 'assets/neko-mascot  men.vrm',
+      icon: 'assets/neko-men-icon.png'
+    },
+    women: {
+      name: 'neko women',
+      displayName: 'ネコ (Women)',
+      file: 'assets/neko-mascot women.vrm',
+      icon: 'assets/neko-women-icon.png'
+    }
+  },
   author: 'fumiyan',
   isReady: true
 };
@@ -7961,8 +8105,36 @@ function selectAvatarType(type = 'vrm') {
   updatePilotDisplay();
 }
 
+function switchVrmModel(modelId) {
+  if (!['men', 'women'].includes(modelId)) return;
+  gameState.vrmModel = modelId;
+  saveCustomization();
+
+  // ボタンのアクティブ状態切り替え
+  ['men', 'women'].forEach(id => {
+    const btn = document.getElementById(`btn-vrm-${id}`);
+    if (btn) btn.classList.toggle('active', id === modelId);
+  });
+
+  // ステータスカードのモデル名更新
+  const elStatusName = document.getElementById('vrm-status-model-name');
+  if (elStatusName && window.VRM_MODELS_DATA && window.VRM_MODELS_DATA[modelId]) {
+    elStatusName.textContent = window.VRM_MODELS_DATA[modelId].name;
+  }
+
+  // 3Dモデル切り替え
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.switchModel(modelId);
+  }
+
+  // アイコン・プレビューの更新
+  updatePilotDisplay();
+
+  if (window.playSound) playSound('click');
+}
+
 function onCostumePrepClick() {
-  const msg = '👗 3Dドッグ・パイロットの着せ替え機能は現在アップデート準備中です！\n公開まで楽しみにお待ちください！';
+  const msg = '👗 3Dネコ・パイロットの着せ替え機能は現在アップデート準備中です！\n公開まで楽しみにお待ちください！';
   if (typeof showSystemNoticeModal === 'function') {
     showSystemNoticeModal('👗 着せ替え：準備中', msg);
   } else {
@@ -7993,6 +8165,15 @@ function triggerVrmAction(action) {
 
 function initAvatarSettingsUI() {
   selectAvatarType('vrm');
+  const curModel = gameState.vrmModel || 'men';
+  ['men', 'women'].forEach(id => {
+    const btn = document.getElementById(`btn-vrm-${id}`);
+    if (btn) btn.classList.toggle('active', id === curModel);
+  });
+  const elStatusName = document.getElementById('vrm-status-model-name');
+  if (elStatusName && window.VRM_MODELS_DATA && window.VRM_MODELS_DATA[curModel]) {
+    elStatusName.textContent = window.VRM_MODELS_DATA[curModel].name;
+  }
   setAvatarExpression(gameState.vrmExpression || 'happy');
   
   const setupVrmViewer = () => {
