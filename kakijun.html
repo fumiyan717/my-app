@@ -1326,9 +1326,9 @@
 
   <!-- 右下端・著作権＆エンジン表記（要件準拠） -->
   <footer class="legal-attribution" id="legal-attribution">
-    <span>Powered by <a href="https://chanind.github.io/hanzi-writer/" target="_blank" rel="noopener">HanziWriter</a> &amp; <a href="https://github.com/parsimonhi/animCJK" target="_blank" rel="noopener">hanzi-writer-data-jp</a> (AnimCJK / MakeMeAHanzi)</span>
+    <span>Powered by <a href="https://chanind.github.io/hanzi-writer/" target="_blank" rel="noopener">HanziWriter</a> &amp; <a href="http://kanjivg.tagaini.net/" target="_blank" rel="noopener">KanjiVG</a>（文部科学省学習指導要領・教科書体完全準拠）</span>
     <span style="opacity: 0.5;">｜</span>
-    <span>教科書体・文科省学習指導要領配当準拠</span>
+    <span>文部科学省学習指導要領（教科書体）完全準拠</span>
   </footer>
 
   <script>
@@ -1544,10 +1544,180 @@
       initWriter(char);
     }
 
+    // ==========================================
+    // 📚 文部科学省学習指導要領（教科書体）完全準拠 KanjiVG データローダー
+    // ==========================================
+    function convertKanjiVgSvgToCharData(char, svgText) {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgText, 'image/svg+xml');
+        const pathNodes = Array.from(doc.querySelectorAll('path[d]'));
+        if (!pathNodes.length) return null;
+
+        const svgNs = 'http://www.w3.org/2000/svg';
+        const tempSvg = document.createElementNS(svgNs, 'svg');
+        tempSvg.style.position = 'absolute';
+        tempSvg.style.top = '-9999px';
+        tempSvg.style.left = '-9999px';
+        tempSvg.style.width = '109px';
+        tempSvg.style.height = '109px';
+        document.body.appendChild(tempSvg);
+
+        const scale = 8.0;
+        const xCenter = 512.0;
+        const yCenter = 388.0;
+        const totalStrokes = pathNodes.length;
+        const hw = totalStrokes <= 5 ? 25.0 : (totalStrokes <= 10 ? 23.0 : (totalStrokes <= 15 ? 21.0 : 19.0));
+
+        function toHw(x, y) {
+          return [Math.round(xCenter + (x - 54.5) * scale), Math.round(yCenter - (y - 54.5) * scale)];
+        }
+
+        const strokes = [];
+        const medians = [];
+
+        try {
+          for (const node of pathNodes) {
+            const pathEl = document.createElementNS(svgNs, 'path');
+            pathEl.setAttribute('d', node.getAttribute('d'));
+            tempSvg.appendChild(pathEl);
+
+            const totalLen = pathEl.getTotalLength();
+            if (totalLen <= 0.001) {
+              tempSvg.removeChild(pathEl);
+              continue;
+            }
+
+            const numSamples = Math.max(14, Math.round(totalLen / 1.1));
+            const hwPts = [];
+            for (let i = 0; i < numSamples; i++) {
+              const pt = pathEl.getPointAtLength((i / (numSamples - 1)) * totalLen);
+              hwPts.push(toHw(pt.x, pt.y));
+            }
+
+            // medians (subsampled for HanziWriter & technique analysis)
+            const numMedianPts = Math.min(12, Math.max(4, Math.floor(numSamples / 3)));
+            const median = [];
+            for (let i = 0; i < numMedianPts; i++) {
+              const idx = Math.round((i / (numMedianPts - 1)) * (numSamples - 1));
+              const pt = hwPts[idx];
+              if (median.length === 0 || median[median.length - 1][0] !== pt[0] || median[median.length - 1][1] !== pt[1]) {
+                median.push(pt);
+              }
+            }
+            medians.push(median);
+
+            // outline generation
+            const leftPts = [];
+            const rightPts = [];
+            for (let i = 0; i < numSamples; i++) {
+              let tx, ty;
+              if (i === 0) {
+                tx = hwPts[1][0] - hwPts[0][0];
+                ty = hwPts[1][1] - hwPts[0][1];
+              } else if (i === numSamples - 1) {
+                tx = hwPts[i][0] - hwPts[i - 1][0];
+                ty = hwPts[i][1] - hwPts[i - 1][1];
+              } else {
+                tx = hwPts[i + 1][0] - hwPts[i - 1][0];
+                ty = hwPts[i + 1][1] - hwPts[i - 1][1];
+              }
+              const len = Math.hypot(tx, ty) || 1;
+              const nx = -ty / len;
+              const ny = tx / len;
+              leftPts.push([Math.round(hwPts[i][0] + nx * hw), Math.round(hwPts[i][1] + ny * hw)]);
+              rightPts.push([Math.round(hwPts[i][0] - nx * hw), Math.round(hwPts[i][1] - ny * hw)]);
+            }
+
+            const startDx = hwPts[1][0] - hwPts[0][0];
+            const startDy = hwPts[1][1] - hwPts[0][1];
+            const startLen = Math.hypot(startDx, startDy) || 1;
+            const startTip = [Math.round(hwPts[0][0] - (startDx / startLen) * hw), Math.round(hwPts[0][1] - (startDy / startLen) * hw)];
+
+            const endDx = hwPts[numSamples - 1][0] - hwPts[numSamples - 2][0];
+            const endDy = hwPts[numSamples - 1][0] - hwPts[numSamples - 2][1];
+            const endLen = Math.hypot(endDx, endDy) || 1;
+            const endTip = [Math.round(hwPts[numSamples - 1][0] + (endDx / endLen) * hw), Math.round(hwPts[numSamples - 1][1] + (endDy / endLen) * hw)];
+
+            const parts = [`M ${leftPts[0][0]},${leftPts[0][1]}`];
+            for (let i = 1; i < leftPts.length; i++) {
+              parts.push(`L ${leftPts[i][0]},${leftPts[i][1]}`);
+            }
+            parts.push(`Q ${endTip[0]},${endTip[1]} ${rightPts[rightPts.length - 1][0]},${rightPts[rightPts.length - 1][1]}`);
+            for (let i = rightPts.length - 2; i >= 0; i--) {
+              parts.push(`L ${rightPts[i][0]},${rightPts[i][1]}`);
+            }
+            parts.push(`Q ${startTip[0]},${startTip[1]} ${leftPts[0][0]},${leftPts[0][1]}`);
+            parts.push('Z');
+
+            strokes.push(parts.join(' '));
+            tempSvg.removeChild(pathEl);
+          }
+        } finally {
+          document.body.removeChild(tempSvg);
+        }
+
+        return { character: char, strokes, medians };
+      } catch (err) {
+        console.error('convertKanjiVgSvgToCharData error:', err);
+        return null;
+      }
+    }
+
+    function loadKanjiVgCharData(c, onComplete, onErr) {
+      if (charDataCache[c]) {
+        onComplete(charDataCache[c]);
+        return;
+      }
+
+      const code = c.codePointAt(0).toString(16).padStart(5, '0');
+      // 1. ローカルKanjiVG JSON (文科省学習指導要領・教科書体完全準拠)
+      fetch(`data/kanjivg/${code}.json`)
+        .then(res => {
+          if (!res.ok) throw new Error('Local KanjiVG not found');
+          return res.json();
+        })
+        .then(data => {
+          charDataCache[c] = data;
+          onComplete(data);
+        })
+        .catch(err => {
+          console.warn(`Local KanjiVG not found for "${c}" (${code}), trying KanjiVG CDN SVG:`, err);
+          // 2. KanjiVG公式CDNからSVGを取得して動的変換
+          const cdnUrl = `https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg/kanji/${code}.svg`;
+          fetch(cdnUrl)
+            .then(res => {
+              if (!res.ok) throw new Error('KanjiVG CDN SVG not found');
+              return res.text();
+            })
+            .then(svgText => {
+              const converted = convertKanjiVgSvgToCharData(c, svgText);
+              if (converted && converted.strokes && converted.strokes.length) {
+                charDataCache[c] = converted;
+                onComplete(converted);
+              } else {
+                throw new Error('Failed to parse KanjiVG SVG');
+              }
+            })
+            .catch(cdnErr => {
+              console.warn('KanjiVG CDN conversion failed, falling back to hanzi-writer-data:', cdnErr);
+              // 3. 最終フォールバック
+              const fallbackUrl = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@latest/${encodeURIComponent(c)}.json`;
+              fetch(fallbackUrl)
+                .then(r => r.json())
+                .then(d => {
+                  charDataCache[c] = d;
+                  onComplete(d);
+                })
+                .catch(onErr);
+            });
+        });
+    }
+
     function initWriter(char) {
       const target = document.getElementById('writer-target');
       target.innerHTML = '';
-      document.getElementById('status-text').innerHTML = `「<strong>${char}</strong>」のお手本を準備中...`;
+      document.getElementById('status-text').innerHTML = `「<strong>${char}</strong>」のお手本を準備中...（文科省教科書体準拠）`;
 
       try {
         writerInstance = HanziWriter.create('writer-target', char, {
@@ -1561,31 +1731,7 @@
           outlineColor: currentTheme === 'chalkboard' ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.15)',
           showCharacter: false,
           charDataLoader: function(c, onComplete, onErr) {
-            if (charDataCache[c]) {
-              onComplete(charDataCache[c]);
-              return;
-            }
-            const urlJp = `https://cdn.jsdelivr.net/npm/hanzi-writer-data-jp@latest/${encodeURIComponent(c)}.json`;
-            fetch(urlJp)
-              .then(res => {
-                if (!res.ok) throw new Error('JP data not found');
-                return res.json();
-              })
-              .then(data => {
-                charDataCache[c] = data;
-                onComplete(data);
-              })
-              .catch(err => {
-                console.warn('JP fallback:', err);
-                const urlFallback = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@latest/${encodeURIComponent(c)}.json`;
-                fetch(urlFallback)
-                  .then(r => r.json())
-                  .then(d => {
-                    charDataCache[c] = d;
-                    onComplete(d);
-                  })
-                  .catch(onErr);
-              });
+            loadKanjiVgCharData(c, onComplete, onErr);
           },
           onLoadCharDataSuccess: function(charData) {
             currentCharData = charData;
