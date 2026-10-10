@@ -577,20 +577,20 @@
       overflow: hidden;
     }
 
-    /* 3行を右から左へ並べるフレックスコンテナ */
+    /* 3行を右から左へ並べるフレックスコンテナ（1文目が一番右に来る） */
     .card-verses-container {
       display: flex;
-      flex-direction: row; /* writing-mode: vertical-rl の下で右から左へ自然に並ぶ */
+      flex-direction: row-reverse; /* ★右から左へ: 1行目(右端) → 2行目(中央) → 3行目(左端)★ */
       align-items: flex-start; /* 上端揃えで音読しやすい！ */
       justify-content: center;
-      gap: 16px;
+      gap: 20px;
       height: 100%;
       max-height: 255px;
       max-width: 100%;
     }
 
     .stage-flip-perspective.jumbo .card-verses-container {
-      gap: 28px;
+      gap: 32px;
       max-height: 360px;
     }
 
