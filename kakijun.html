@@ -9,9 +9,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDPMincho:wght@400;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 
-  <!-- HanziWriter & 漢字マスターデータ (1,026字) -->
+  <!-- HanziWriter & 漢字マスターデータ (1,026字) & 1年生例文カードデータ -->
   <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
   <script src="kanji-data.js"></script>
+  <script src="grade1-card-data.js"></script>
 
   <style>
     /* ====================================================
@@ -347,43 +348,332 @@
       box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
     }
 
-    /* 描画ステージ（360x360 / 拡大時480x480） */
-    .writer-stage {
-      position: relative;
+    /* ====================================================
+       3Dカードフリップコンテナ & 例文フラッシュカード
+       ==================================================== */
+    .stage-flip-perspective {
+      perspective: 1200px;
       width: 360px;
       height: 360px;
-      background: var(--bg-stage);
-      border: 3px solid var(--border-panel);
-      border-radius: 16px;
-      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.25);
       margin: 4px 0 12px 0;
-      overflow: hidden;
-      touch-action: none;
       transition: width 0.25s ease, height 0.25s ease;
     }
 
-    .writer-stage.jumbo {
+    .stage-flip-perspective.jumbo {
       width: 480px;
       height: 480px;
       max-width: 100%;
       aspect-ratio: 1 / 1;
     }
 
-    .writer-stage.jumbo .number-badge {
+    @media (max-width: 540px) {
+      .stage-flip-perspective {
+        width: min(340px, 92vw);
+        height: min(340px, 92vw);
+      }
+      .stage-flip-perspective.jumbo {
+        width: min(440px, 96vw);
+        height: min(440px, 96vw);
+      }
+    }
+
+    .stage-flip-card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.34, 1.25, 0.64, 1);
+    }
+
+    .stage-flip-card.is-flipped {
+      transform: rotateY(180deg);
+    }
+
+    .stage-face {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: 16px;
+    }
+
+    .stage-face-front {
+      z-index: 2;
+      transform: rotateY(0deg);
+    }
+
+    .stage-face-back {
+      transform: rotateY(180deg);
+      z-index: 1;
+    }
+
+    /* 描画ステージ（360x360 / 拡大時480x480） */
+    .writer-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-stage);
+      border: 3px solid var(--border-panel);
+      border-radius: 16px;
+      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.25);
+      margin: 0;
+      overflow: hidden;
+      touch-action: none;
+      transition: width 0.25s ease, height 0.25s ease;
+    }
+
+    /* お手本アニメモード時のステージタップ示唆 */
+    [data-anim-mode="true"] .writer-stage {
+      cursor: pointer;
+    }
+
+    .stage-flip-perspective.jumbo .number-badge {
       width: 24px;
       height: 24px;
       font-size: 13px;
     }
 
-    @media (max-width: 540px) {
-      .writer-stage {
-        width: min(340px, 92vw);
-        height: min(340px, 92vw);
-      }
-      .writer-stage.jumbo {
-        width: min(440px, 96vw);
-        height: min(440px, 96vw);
-      }
+    /* 表面右上のめくりボタン */
+    .btn-flip-front {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #fde047;
+      color: #0f172a;
+      border: 2px solid #ca8a04;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      display: none; /* 1年生の時のみJSで表示 */
+      align-items: center;
+      gap: 5px;
+      z-index: 25;
+      font-family: inherit;
+      transition: transform 0.15s, background-color 0.15s;
+    }
+
+    .btn-flip-front:hover {
+      background: #facc15;
+      transform: scale(1.06);
+    }
+
+    /* 例文カード本体（裏面フラッシュカード） */
+    .example-card {
+      width: 100%;
+      height: 100%;
+      background-color: #fdfbf7;
+      background-image:
+        radial-gradient(#e7e0d3 1px, transparent 1px),
+        linear-gradient(to bottom, #ffffff, #fdfbf7);
+      background-size: 16px 16px, 100% 100%;
+      border: 3px solid #e2d7c7;
+      border-radius: 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      padding: 14px 16px 12px 16px;
+      position: relative;
+      box-sizing: border-box;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    /* 単語帳のパンチ穴 */
+    .card-punch-hole {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #0b1f17;
+      border: 2px solid #bdae99;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+      z-index: 5;
+    }
+    .card-punch-hole::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      border-radius: 50%;
+      border: 1px dashed rgba(160, 140, 110, 0.5);
+    }
+
+    /* カードヘッダー */
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-left: 26px; /* パンチ穴除け */
+      margin-bottom: 4px;
+      z-index: 4;
+    }
+
+    .card-style-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      letter-spacing: 0.05em;
+    }
+
+    .card-style-tag.dajare {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+
+    .card-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-mini-btn {
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.15s;
+    }
+
+    .card-mini-btn:hover {
+      background: rgba(0, 0, 0, 0.12);
+      color: #0f172a;
+      transform: translateY(-1px);
+    }
+
+    /* 縦書きカード本文エリア */
+    .card-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 6px 4px;
+      overflow: hidden;
+    }
+
+    .card-vertical-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-height: 255px;
+      max-width: 100%;
+    }
+
+    .stage-flip-perspective.jumbo .card-vertical-wrapper {
+      max-height: 360px;
+    }
+
+    .card-sentence-text {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-family: 'BIZ UDPMincho', 'Zen Maru Gothic', serif;
+      font-size: 22px;
+      line-height: 2.1;
+      letter-spacing: 0.12em;
+      color: #1e293b;
+      max-height: 255px;
+      font-weight: 700;
+      white-space: pre-wrap;
+    }
+
+    .stage-flip-perspective.jumbo .card-sentence-text {
+      font-size: 28px;
+      max-height: 360px;
+      line-height: 2.2;
+    }
+
+    /* ルビ装飾 */
+    .card-sentence-text ruby {
+      ruby-position: over;
+    }
+
+    .card-sentence-text rt {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 0.52em;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0;
+    }
+
+    /* 学習対象漢字ハイライト */
+    .card-target-kanji {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #78350f;
+      font-size: 1.35em;
+      font-weight: 900;
+      line-height: 1;
+      margin: 3px 0;
+      z-index: 1;
+    }
+
+    .card-target-kanji::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1.35em;
+      height: 1.35em;
+      background: #fde047;
+      border-radius: 50%;
+      z-index: -1;
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.45);
+    }
+
+    .card-ruby-target rt {
+      color: #92400e;
+      font-weight: 900;
+    }
+
+    /* 縦書き記号の直立 */
+    .t-mark {
+      text-combine-upright: all;
+    }
+
+    /* カード下部フッター */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-top: 1px dashed #e2d7c7;
+      padding-top: 6px;
+      z-index: 4;
+    }
+
+    .card-footer-tip {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 700;
+      letter-spacing: 0.05em;
     }
 
     /* グリッドガイド線 */
@@ -1097,24 +1387,64 @@
           </button>
         </div>
 
-        <!-- 描画ステージ（360x360 / 拡大時480x480） -->
-        <div class="writer-stage" id="writer-stage">
-          <!-- マス目グリッドSVG -->
-          <svg class="grid-svg" viewBox="0 0 360 360" id="grid-svg">
-            <line class="grid-line-cross" x1="180" y1="0" x2="180" y2="360" />
-            <line class="grid-line-cross" x1="0" y1="180" x2="360" y2="180" />
-            <line class="grid-line-diag" id="grid-diag-1" x1="0" y1="0" x2="360" y2="360" style="display:none;" />
-            <line class="grid-line-diag" id="grid-diag-2" x1="360" y1="0" x2="0" y2="360" style="display:none;" />
-          </svg>
+        <!-- 3Dフリップステージコンテナ（表: 筆順ステージ / 裏: 1年生例文カード） -->
+        <div class="stage-flip-perspective" id="stage-flip-perspective">
+          <div class="stage-flip-card" id="stage-flip-card">
+            <!-- 表面: 描画ステージ（360x360 / 拡大時480x480） -->
+            <div class="stage-face stage-face-front">
+              <div class="writer-stage" id="writer-stage">
+                <!-- マス目グリッドSVG -->
+                <svg class="grid-svg" viewBox="0 0 360 360" id="grid-svg">
+                  <line class="grid-line-cross" x1="180" y1="0" x2="180" y2="360" />
+                  <line class="grid-line-cross" x1="0" y1="180" x2="360" y2="180" />
+                  <line class="grid-line-diag" id="grid-diag-1" x1="0" y1="0" x2="360" y2="360" style="display:none;" />
+                  <line class="grid-line-diag" id="grid-diag-2" x1="360" y1="0" x2="0" y2="360" style="display:none;" />
+                </svg>
 
-          <!-- HanziWriter なぞり書き・お手本ターゲット -->
-          <div id="writer-target"></div>
+                <!-- HanziWriter なぞり書き・お手本ターゲット -->
+                <div id="writer-target"></div>
 
-          <!-- フリー手書き用キャンバス -->
-          <canvas id="draw-canvas" width="360" height="360" style="display: none;"></canvas>
+                <!-- フリー手書き用キャンバス -->
+                <canvas id="draw-canvas" width="360" height="360" style="display: none;"></canvas>
 
-          <!-- 筆順番号オーバーレイ -->
-          <div id="numbers-overlay" style="display: none;"></div>
+                <!-- 筆順番号オーバーレイ -->
+                <div id="numbers-overlay" style="display: none;"></div>
+
+                <!-- 表面右上：例文カードめくりボタン（1年生のみ表示） -->
+                <button class="btn-flip-front" id="btn-flip-front" onclick="flipCardToBack(event)" title="タップで例文カードをみる">
+                  🔄 例文カード
+                </button>
+              </div>
+            </div>
+
+            <!-- 裏面: 縦書き例文カード（フラッシュカード） -->
+            <div class="stage-face stage-face-back" onclick="flipCardToFront(event)">
+              <div class="example-card" id="example-card">
+                <div class="card-punch-hole"></div>
+                <div class="card-header">
+                  <span class="card-style-tag" id="card-style-tag">🔖 五七五</span>
+                  <div class="card-header-actions">
+                    <button class="card-mini-btn" id="btn-card-speak" onclick="speakCardSentence(event)" title="例文を音声で読み上げます">
+                      🔊 読む
+                    </button>
+                    <button class="card-mini-btn" onclick="flipCardToFront(event)" title="筆順アニメーションに戻る">
+                      ↩️ お手本
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="card-vertical-wrapper">
+                    <div class="card-sentence-text" id="card-sentence-text">
+                      <!-- 動的に生成されたルビ付き縦書き例文 -->
+                    </div>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <span class="card-footer-tip">👆 タップでお手本アニメに戻る</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 実況・判定フィードバックバナー -->
@@ -1506,6 +1836,17 @@
       renderKanjiGrid();
       loadCurrentKanji(currentChar);
       setupKeyboardShortcuts();
+
+      // お手本アニメモード時、ステージタップでカードを裏返す
+      const writerStageEl = document.getElementById('writer-stage');
+      if (writerStageEl) {
+        writerStageEl.addEventListener('click', (e) => {
+          if (e.target.closest('#btn-flip-front')) return;
+          if (currentMode === 'anim' && hasGrade1Card(currentChar)) {
+            flipCardToBack(e);
+          }
+        });
+      }
     }
 
     // ==========================================
@@ -1540,8 +1881,130 @@
 
       updateGridSelection();
       updateKanjiInfoCard();
+      updateExampleCard(char);
       clearFreeCanvas();
       initWriter(char);
+    }
+
+    // ==========================================
+    // 📇 1年生例文カード（フラッシュカード）機能
+    // ==========================================
+    function hasGrade1Card(char) {
+      return Boolean(window.GRADE1_CARD_DATA && window.GRADE1_CARD_DATA[char]);
+    }
+
+    function flipCardToBack(e) {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      if (!hasGrade1Card(currentChar)) return;
+      const flipCard = document.getElementById('stage-flip-card');
+      if (flipCard) flipCard.classList.add('is-flipped');
+    }
+
+    function flipCardToFront(e) {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      const flipCard = document.getElementById('stage-flip-card');
+      if (flipCard) flipCard.classList.remove('is-flipped');
+    }
+
+    function toggleCardFlip(e) {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      if (!hasGrade1Card(currentChar)) return;
+      const flipCard = document.getElementById('stage-flip-card');
+      if (flipCard) flipCard.classList.toggle('is-flipped');
+    }
+
+    function speakCardSentence(e) {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      if (!hasGrade1Card(currentChar)) return;
+      if (!('speechSynthesis' in window)) {
+        alert('お使いのブラウザは音声読み上げに対応していません。');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const card = window.GRADE1_CARD_DATA[currentChar];
+      const text = card.sentence || currentChar;
+      const uttr = new SpeechSynthesisUtterance(text);
+      uttr.lang = 'ja-JP';
+      uttr.rate = 0.95;
+      window.speechSynthesis.speak(uttr);
+    }
+
+    function renderCardTokens(tokens, targetKanji) {
+      return tokens.map(tok => {
+        const isTarget = tok.t === targetKanji;
+        const isPunctuation = /[！？!?,.、。]/.test(tok.t);
+        const puncClass = isPunctuation ? ' class="t-mark"' : '';
+
+        if (tok.r) {
+          if (isTarget) {
+            return `<ruby class="card-ruby-target"><span class="card-target-kanji">${tok.t}</span><rt>${tok.r}</rt></ruby>`;
+          } else {
+            return `<ruby>${tok.t}<rt>${tok.r}</rt></ruby>`;
+          }
+        } else {
+          if (isTarget) {
+            return `<span class="card-target-kanji">${tok.t}</span>`;
+          } else {
+            return `<span${puncClass}>${tok.t}</span>`;
+          }
+        }
+      }).join('');
+    }
+
+    function renderFallbackSentence(sentence, targetKanji) {
+      const escaped = targetKanji.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const parts = sentence.split(new RegExp(`(${escaped})`, 'g'));
+      return parts.map(part => {
+        if (part === targetKanji) {
+          return `<span class="card-target-kanji">${part}</span>`;
+        }
+        const isPunctuation = /[！？!?,.、。]/.test(part);
+        return `<span${isPunctuation ? ' class="t-mark"' : ''}>${part}</span>`;
+      }).join('');
+    }
+
+    function updateExampleCard(char) {
+      const flipCard = document.getElementById('stage-flip-card');
+      const flipBtn = document.getElementById('btn-flip-front');
+      const tagEl = document.getElementById('card-style-tag');
+      const sentenceEl = document.getElementById('card-sentence-text');
+
+      // 漢字が切り替わった時は必ず表面に戻す
+      if (flipCard) flipCard.classList.remove('is-flipped');
+
+      if (hasGrade1Card(char)) {
+        if (flipBtn) flipBtn.style.display = 'inline-flex';
+        const card = window.GRADE1_CARD_DATA[char];
+
+        if (tagEl) {
+          tagEl.textContent = (card.style === '五七五' ? '🔖 五七五' : '🎈 ダジャレ');
+          tagEl.className = 'card-style-tag ' + (card.style === 'ダジャレ' ? 'dajare' : '');
+        }
+
+        if (sentenceEl) {
+          if (card.tokens && card.tokens.length) {
+            sentenceEl.innerHTML = renderCardTokens(card.tokens, char);
+          } else {
+            sentenceEl.innerHTML = renderFallbackSentence(card.sentence || '', char);
+          }
+        }
+      } else {
+        // 2〜6年生の漢字は現時点では例文カード未実装（非表示）
+        if (flipBtn) flipBtn.style.display = 'none';
+        if (sentenceEl) sentenceEl.innerHTML = '';
+      }
     }
 
     // ==========================================
@@ -1835,6 +2298,11 @@
 
       const drawCanvasEl = document.getElementById('draw-canvas');
       const writerTargetEl = document.getElementById('writer-target');
+      const writerStageEl = document.getElementById('writer-stage');
+      if (writerStageEl) {
+        writerStageEl.setAttribute('data-anim-mode', mode === 'anim' ? 'true' : 'false');
+      }
+      flipCardToFront();
       stopLoop();
       isPlaying = false;
       isPaused = false;
@@ -2659,10 +3127,12 @@
     function toggleStageZoom() {
       isStageZoomed = !isStageZoomed;
       const stage = document.getElementById('writer-stage');
+      const flipContainer = document.getElementById('stage-flip-perspective');
       const btn = document.getElementById('btn-zoom');
       const stageBtn = document.getElementById('btn-stage-zoom');
 
       if (stage) stage.classList.toggle('jumbo', isStageZoomed);
+      if (flipContainer) flipContainer.classList.toggle('jumbo', isStageZoomed);
       if (btn) {
         btn.innerHTML = isStageZoomed ? '🔍 標準サイズ' : '🔍 拡大';
         btn.classList.toggle('active', isStageZoomed);
