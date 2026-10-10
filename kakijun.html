@@ -577,47 +577,52 @@
       overflow: hidden;
     }
 
-    .card-vertical-wrapper {
+    /* 3行を右から左へ並べるフレックスコンテナ */
+    .card-verses-container {
       display: flex;
-      align-items: center;
+      flex-direction: row; /* writing-mode: vertical-rl の下で右から左へ自然に並ぶ */
+      align-items: flex-start; /* 上端揃えで音読しやすい！ */
       justify-content: center;
+      gap: 16px;
+      height: 100%;
       max-height: 255px;
       max-width: 100%;
     }
 
-    .stage-flip-perspective.jumbo .card-vertical-wrapper {
+    .stage-flip-perspective.jumbo .card-verses-container {
+      gap: 28px;
       max-height: 360px;
     }
 
-    .card-sentence-text {
+    /* 各行（上の句・中の句・下の句）: 絶対に途中で改行しない */
+    .card-verse-line {
       writing-mode: vertical-rl;
       text-orientation: mixed;
-      font-family: 'BIZ UDPMincho', 'Zen Maru Gothic', serif;
-      font-size: 22px;
+      white-space: nowrap; /* ★拡大時でも途中で絶対に改行させない★ */
+      font-family: 'Zen Maru Gothic', 'BIZ UDPGothic', sans-serif;
+      font-size: 24px;
       line-height: 2.1;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
       color: #1e293b;
-      max-height: 255px;
       font-weight: 700;
-      white-space: pre-wrap;
     }
 
-    .stage-flip-perspective.jumbo .card-sentence-text {
-      font-size: 28px;
-      max-height: 360px;
-      line-height: 2.2;
+    .stage-flip-perspective.jumbo .card-verse-line {
+      font-size: 32px;
+      line-height: 2.3;
+      letter-spacing: 0.12em;
     }
 
     /* ルビ装飾 */
-    .card-sentence-text ruby {
+    .card-verse-line ruby {
       ruby-position: over;
     }
 
-    .card-sentence-text rt {
+    .card-verse-line rt {
       font-family: 'Zen Maru Gothic', sans-serif;
-      font-size: 0.52em;
-      font-weight: 700;
-      color: #64748b;
+      font-size: 0.48em;
+      font-weight: 800;
+      color: #475569;
       letter-spacing: 0;
     }
 
@@ -1433,10 +1438,8 @@
                   </div>
                 </div>
                 <div class="card-body">
-                  <div class="card-vertical-wrapper">
-                    <div class="card-sentence-text" id="card-sentence-text">
-                      <!-- 動的に生成されたルビ付き縦書き例文 -->
-                    </div>
+                  <div class="card-verses-container" id="card-verses-container">
+                    <!-- 動的に生成された3行固定のルビ付き縦書き例文 -->
                   </div>
                 </div>
                 <div class="card-footer">
@@ -1934,14 +1937,15 @@
       }
       window.speechSynthesis.cancel();
       const card = window.GRADE1_CARD_DATA[currentChar];
-      const text = card.sentence || currentChar;
+      const text = card.speakText || card.sentence || currentChar;
       const uttr = new SpeechSynthesisUtterance(text);
       uttr.lang = 'ja-JP';
-      uttr.rate = 0.95;
+      uttr.rate = 0.90;
+      uttr.pitch = 1.05;
       window.speechSynthesis.speak(uttr);
     }
 
-    function renderCardTokens(tokens, targetKanji) {
+    function renderCardLine(tokens, targetKanji) {
       return tokens.map(tok => {
         const isTarget = tok.t === targetKanji;
         const isPunctuation = /[！？!?,.、。]/.test(tok.t);
@@ -1963,23 +1967,11 @@
       }).join('');
     }
 
-    function renderFallbackSentence(sentence, targetKanji) {
-      const escaped = targetKanji.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const parts = sentence.split(new RegExp(`(${escaped})`, 'g'));
-      return parts.map(part => {
-        if (part === targetKanji) {
-          return `<span class="card-target-kanji">${part}</span>`;
-        }
-        const isPunctuation = /[！？!?,.、。]/.test(part);
-        return `<span${isPunctuation ? ' class="t-mark"' : ''}>${part}</span>`;
-      }).join('');
-    }
-
     function updateExampleCard(char) {
       const flipCard = document.getElementById('stage-flip-card');
       const flipBtn = document.getElementById('btn-flip-front');
       const tagEl = document.getElementById('card-style-tag');
-      const sentenceEl = document.getElementById('card-sentence-text');
+      const containerEl = document.getElementById('card-verses-container');
 
       // 漢字が切り替わった時は必ず表面に戻す
       if (flipCard) flipCard.classList.remove('is-flipped');
@@ -1993,17 +1985,20 @@
           tagEl.className = 'card-style-tag ' + (card.style === 'ダジャレ' ? 'dajare' : '');
         }
 
-        if (sentenceEl) {
-          if (card.tokens && card.tokens.length) {
-            sentenceEl.innerHTML = renderCardTokens(card.tokens, char);
+        if (containerEl) {
+          if (card.lines && card.lines.length) {
+            containerEl.innerHTML = card.lines.map((lineTokens, idx) => {
+              const lineContent = renderCardLine(lineTokens, char);
+              return `<div class="card-verse-line line-${idx + 1}">${lineContent}</div>`;
+            }).join('');
           } else {
-            sentenceEl.innerHTML = renderFallbackSentence(card.sentence || '', char);
+            containerEl.innerHTML = `<div class="card-verse-line">${card.sentence || ''}</div>`;
           }
         }
       } else {
         // 2〜6年生の漢字は現時点では例文カード未実装（非表示）
         if (flipBtn) flipBtn.style.display = 'none';
-        if (sentenceEl) sentenceEl.innerHTML = '';
+        if (containerEl) containerEl.innerHTML = '';
       }
     }
 
