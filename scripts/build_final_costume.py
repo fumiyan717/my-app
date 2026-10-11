@@ -133,8 +133,8 @@ canvas_tops.paste(sr_feather, (796, 1225), sr_feather)
 # Apply VRM alpha mask
 res_tops = canvas_tops.copy()
 res_tops.putalpha(tops_alpha)
-res_tops.save(f"{OUT_DIR}/tops_hoodie.png")
-print("Generated assets/costumes/tops_hoodie.png")
+res_tops.quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(f"{OUT_DIR}/tops_hoodie.png", optimize=True)
+print("Generated assets/costumes/tops_hoodie.png (optimized)")
 
 # 7. Compose BOTTOMS texture (Navy shorts with double white sporty piping)
 bottoms_default = Image.open(f"{OUT_DIR}/bottoms_default.png").convert("RGBA")
@@ -204,5 +204,5 @@ final_icon.save(f"{OUT_DIR}/icon_hoodie.png")
 print("Generated assets/costumes/icon_hoodie.png")
 
 # Also save 3D hood texture for Three.js 3D accessory
-diff_map.resize((512, 512), Image.Resampling.LANCZOS).save(f"{OUT_DIR}/hood_pattern.png")
-print("Generated assets/costumes/hood_pattern.png")
+diff_map.resize((384, 384), Image.Resampling.LANCZOS).quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(f"{OUT_DIR}/hood_pattern.png", optimize=True)
+print("Generated assets/costumes/hood_pattern.png (optimized)")

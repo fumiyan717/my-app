@@ -122,24 +122,13 @@ export class VrmCostumeManager {
     this.preloadAllTextures();
   }
 
-  // テクスチャの事前読み込み
+  // 初期衣装のみ事前読み込み（他の衣装は選択時にオンデマンド遅延読み込みしてメモリ・通信量を大幅削減）
   preloadAllTextures() {
     const THREE = this.THREE;
-    CAT_COSTUMES_DATA.outfit.forEach(item => {
-      ['topsTex', 'bottomsTex', 'normalTex'].forEach(prop => {
-        const url = item[prop];
-        if (url && !this.textureCache[url]) {
-          this.textureLoader.load(url, (tex) => {
-            tex.colorSpace = THREE.SRGBColorSpace;
-            tex.flipY = false;
-            this.textureCache[url] = tex;
-          });
-        }
-      });
-    });
-    // 3Dフード用魚パターン＆法線マップ
-    ['assets/costumes/hood_pattern.png?v=20261011_3d', 'assets/costumes/normal_hoodie_pattern.png?v=20261011_3d'].forEach(url => {
-      if (!this.textureCache[url]) {
+    const initialOutfit = CAT_COSTUMES_DATA.outfit[0]; // hoodie
+    ['topsTex', 'bottomsTex', 'normalTex'].forEach(prop => {
+      const url = initialOutfit && initialOutfit[prop];
+      if (url && !this.textureCache[url]) {
         this.textureLoader.load(url, (tex) => {
           tex.colorSpace = THREE.SRGBColorSpace;
           tex.flipY = false;
@@ -147,6 +136,15 @@ export class VrmCostumeManager {
         });
       }
     });
+    // 3Dフード用魚パターン
+    const hoodUrl = 'assets/costumes/hood_pattern.png?v=20261011_3d';
+    if (!this.textureCache[hoodUrl]) {
+      this.textureLoader.load(hoodUrl, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.flipY = false;
+        this.textureCache[hoodUrl] = tex;
+      });
+    }
   }
 
   getTexture(url, callback) {

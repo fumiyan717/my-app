@@ -5227,9 +5227,9 @@ class VrmAvatarController {
       this.camera.position.set(0, 0.95, 3.7);
 
       // 3. Renderer
-      this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+      this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: 'default' });
       this.renderer.setSize(width, height);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      this.renderer.setPixelRatio(1.0);
       this.renderer.outputColorSpace = THREE.SRGBColorSpace;
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 1.1;
@@ -5294,7 +5294,10 @@ class VrmAvatarController {
     this.setAvatarMode(initialMode === 'robot' ? 'robot' : 'vrm');
 
     this.resize();
-    this.start();
+    const modal = document.getElementById('custom-modal');
+    if (modal && modal.style.display !== 'none') {
+      this.start();
+    }
   }
 
   attachVrmToScene(vrm, modelId = this.currentModelId) {
@@ -5326,7 +5329,10 @@ class VrmAvatarController {
     this.setExpression(window.gameState?.vrmExpression || 'happy');
     this.applyCatCostume(window.gameState?.costume);
     this.showLoadingOverlay(false);
-    this.start();
+    const mEl = document.getElementById('custom-modal');
+    if (mEl && mEl.style.display !== 'none') {
+      this.start();
+    }
   }
 
   adjustCameraForModel(modelId = this.currentModelId) {
@@ -5470,6 +5476,12 @@ class VrmAvatarController {
   }
 
   update() {
+    // 3Dビューポートが画面に表示されていない（モーダル非表示等）ときは完全停止（CPU・GPU・バッテリー負荷ゼロ化）
+    const modal = document.getElementById('custom-modal');
+    if (!modal || modal.style.display === 'none') {
+      return;
+    }
+
     const delta = Math.min(this.clock.getDelta(), 0.05);
     const elapsed = this.clock.getElapsedTime();
 
@@ -7338,6 +7350,9 @@ function selectMode(mode) {
 }
 
 function startGame() {
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.stop();
+  }
   const mode = gameState.currentMode;
   let pool = [];
 
@@ -7370,6 +7385,9 @@ function startGame() {
 }
 
 function startDailyMission() {
+  if (window.VrmAvatarManager) {
+    window.VrmAvatarManager.stop();
+  }
   gameState.currentMode = 'daily';
   gameState.totalQuestions = 5;
 
