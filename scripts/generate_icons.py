@@ -15,6 +15,10 @@ items = [
 ]
 
 for item_id, filename in items:
+    if item_id == 'hoodie' and os.path.exists('さかなパーカー３D.jpg') and os.path.exists('assets/costumes/icon_hoodie.png'):
+        print('Preserving 3D hoodie icon: assets/costumes/icon_hoodie.png')
+        continue
+
     img = Image.open(filename).convert('RGBA')
     # Crop to non-transparent bbox
     bbox = img.getbbox()
