@@ -8,6 +8,16 @@
 export const CAT_COSTUMES_DATA = {
   outfit: [
     {
+      id: 'hoodie',
+      name: 'さかなパーカー',
+      iconImg: 'assets/costumes/icon_hoodie.png?v=20261011_3d',
+      icon: '🐟',
+      desc: '朱色の主紋「魚」と多彩な海の漢字が躍る立体3D柄フード＆シルバーコード・白ラインショーツ仕様のプレミアムパーカー',
+      topsTex: 'assets/costumes/tops_hoodie.png?v=20261011_3d',
+      normalTex: 'assets/costumes/normal_hoodie.png?v=20261011_3d',
+      bottomsTex: 'assets/costumes/bottoms_hoodie.png?v=20261011_3d'
+    },
+    {
       id: 'default',
       name: '標準フライトスーツ',
       iconImg: 'assets/costumes/icon_default.png',
@@ -15,16 +25,6 @@ export const CAT_COSTUMES_DATA = {
       desc: '清潔感のある白Tシャツと黒スラックスの標準パイロットスーツ',
       topsTex: 'assets/costumes/tops_default.png',
       bottomsTex: 'assets/costumes/bottoms_default.png'
-    },
-    {
-      id: 'hoodie',
-      name: 'さかなパーカー',
-      iconImg: 'assets/costumes/icon_hoodie.png',
-      icon: '🐟',
-      desc: '朱色の主紋「魚」と多彩な海の漢字が躍る立体3D柄フード＆シルバーコード・白ラインショーツ仕様のプレミアムパーカー',
-      topsTex: 'assets/costumes/tops_hoodie.png',
-      normalTex: 'assets/costumes/normal_hoodie.png',
-      bottomsTex: 'assets/costumes/bottoms_hoodie.png'
     },
     {
       id: 'hakama1',
@@ -138,7 +138,7 @@ export class VrmCostumeManager {
       });
     });
     // 3Dフード用魚パターン＆法線マップ
-    ['assets/costumes/hood_pattern.png', 'assets/costumes/normal_hoodie_pattern.png'].forEach(url => {
+    ['assets/costumes/hood_pattern.png?v=20261011_3d', 'assets/costumes/normal_hoodie_pattern.png?v=20261011_3d'].forEach(url => {
       if (!this.textureCache[url]) {
         this.textureLoader.load(url, (tex) => {
           tex.colorSpace = THREE.SRGBColorSpace;
@@ -835,7 +835,7 @@ export class VrmCostumeManager {
       side: THREE.FrontSide
     });
 
-    this.getTexture('assets/costumes/hood_pattern.png', (tex) => {
+    this.getTexture('assets/costumes/hood_pattern.png?v=20261011_3d', (tex) => {
       const hoodTex = tex.clone();
       hoodTex.wrapS = THREE.RepeatWrapping;
       hoodTex.wrapT = THREE.RepeatWrapping;
@@ -844,7 +844,7 @@ export class VrmCostumeManager {
       outerHoodMat.needsUpdate = true;
     });
 
-    this.getTexture('assets/costumes/normal_hoodie_pattern.png', (nTex) => {
+    this.getTexture('assets/costumes/normal_hoodie_pattern.png?v=20261011_3d', (nTex) => {
       const hoodNorm = nTex.clone();
       hoodNorm.wrapS = THREE.RepeatWrapping;
       hoodNorm.wrapT = THREE.RepeatWrapping;
