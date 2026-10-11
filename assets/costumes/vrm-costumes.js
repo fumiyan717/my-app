@@ -8,16 +8,6 @@
 export const CAT_COSTUMES_DATA = {
   outfit: [
     {
-      id: 'hoodie',
-      name: 'さかなパーカー',
-      iconImg: 'assets/costumes/icon_hoodie.png?v=20261011_3d',
-      icon: '🐟',
-      desc: '朱色の主紋「魚」と多彩な海の漢字が躍る立体3D柄フード＆シルバーコード・白ラインショーツ仕様のプレミアムパーカー',
-      topsTex: 'assets/costumes/tops_hoodie.png?v=20261011_3d',
-      normalTex: 'assets/costumes/normal_hoodie.png?v=20261011_3d',
-      bottomsTex: 'assets/costumes/bottoms_hoodie.png?v=20261011_3d'
-    },
-    {
       id: 'default',
       name: '標準フライトスーツ',
       iconImg: 'assets/costumes/icon_default.png',
@@ -25,6 +15,15 @@ export const CAT_COSTUMES_DATA = {
       desc: '清潔感のある白Tシャツと黒スラックスの標準パイロットスーツ',
       topsTex: 'assets/costumes/tops_default.png',
       bottomsTex: 'assets/costumes/bottoms_default.png'
+    },
+    {
+      id: 'hoodie',
+      name: 'さかなパーカー',
+      iconImg: 'assets/costumes/icon_hoodie.png',
+      icon: '🐟',
+      desc: '「魚」字と海の漢字が躍るディープネイビーの3Dフード＆白コード付きパーカー',
+      topsTex: 'assets/costumes/tops_hoodie.png',
+      bottomsTex: 'assets/costumes/bottoms_hoodie.png'
     },
     {
       id: 'hakama1',
@@ -122,29 +121,21 @@ export class VrmCostumeManager {
     this.preloadAllTextures();
   }
 
-  // 初期衣装のみ事前読み込み（他の衣装は選択時にオンデマンド遅延読み込みしてメモリ・通信量を大幅削減）
+  // テクスチャの事前読み込み
   preloadAllTextures() {
     const THREE = this.THREE;
-    const initialOutfit = CAT_COSTUMES_DATA.outfit[0]; // hoodie
-    ['topsTex', 'bottomsTex', 'normalTex'].forEach(prop => {
-      const url = initialOutfit && initialOutfit[prop];
-      if (url && !this.textureCache[url]) {
-        this.textureLoader.load(url, (tex) => {
-          tex.colorSpace = THREE.SRGBColorSpace;
-          tex.flipY = false;
-          this.textureCache[url] = tex;
-        });
-      }
-    });
-    // 3Dフード用魚パターン
-    const hoodUrl = 'assets/costumes/hood_pattern.png?v=20261011_3d';
-    if (!this.textureCache[hoodUrl]) {
-      this.textureLoader.load(hoodUrl, (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.flipY = false;
-        this.textureCache[hoodUrl] = tex;
+    CAT_COSTUMES_DATA.outfit.forEach(item => {
+      ['topsTex', 'bottomsTex'].forEach(prop => {
+        const url = item[prop];
+        if (url && !this.textureCache[url]) {
+          this.textureLoader.load(url, (tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.flipY = false;
+            this.textureCache[url] = tex;
+          });
+        }
       });
-    }
+    });
   }
 
   getTexture(url, callback) {
@@ -189,24 +180,13 @@ export class VrmCostumeManager {
               if (!mat.userData.originalMap) {
                 mat.userData.originalMap = mat.map;
                 mat.userData.originalShade = mat.shadeMultiplyTexture;
-                mat.userData.originalNormalMap = mat.normalMap;
               }
               if (isDefault) {
                 mat.map = mat.userData.originalMap;
                 if (mat.shadeMultiplyTexture) mat.shadeMultiplyTexture = mat.userData.originalShade;
-                mat.normalMap = mat.userData.originalNormalMap || null;
               } else {
                 mat.map = topsTex;
                 if (mat.shadeMultiplyTexture) mat.shadeMultiplyTexture = topsTex;
-                if (outfit.normalTex) {
-                  this.getTexture(outfit.normalTex, (normalTex) => {
-                    mat.normalMap = normalTex;
-                    mat.normalScale = new this.THREE.Vector2(0.8, 0.8);
-                    mat.needsUpdate = true;
-                  });
-                } else {
-                  mat.normalMap = mat.userData.originalNormalMap || null;
-                }
               }
               mat.needsUpdate = true;
             }
@@ -818,7 +798,7 @@ export class VrmCostumeManager {
     }
   }
 
-  // 🐟 5. さかなパーカー (Fish Hoodie 3D - 3D立体魚紋様フード・裏地・リブ襟・ハトメ・白コード＆金属アグレット)
+  // 🐟 5. さかなパーカー (Fish Hoodie 3D - 自然なドレープ＆コード)
   buildHoodie3D(chest) {
     const THREE = this.THREE;
     if (!chest) return;
@@ -826,111 +806,30 @@ export class VrmCostumeManager {
     const hoodieGroup = new THREE.Group();
     hoodieGroup.userData.isCostumeItem = true;
 
-    // --- 1. 背面に自然に落ちた立体フード外側 (3D Outer Fabric with Fish Kanji Pattern & Normal Map) ---
-    const outerHoodMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.85,
-      side: THREE.FrontSide
-    });
-
-    this.getTexture('assets/costumes/hood_pattern.png?v=20261011_3d', (tex) => {
-      const hoodTex = tex.clone();
-      hoodTex.wrapS = THREE.RepeatWrapping;
-      hoodTex.wrapT = THREE.RepeatWrapping;
-      hoodTex.repeat.set(1.8, 1.8);
-      outerHoodMat.map = hoodTex;
-      outerHoodMat.needsUpdate = true;
-    });
-
-    this.getTexture('assets/costumes/normal_hoodie_pattern.png?v=20261011_3d', (nTex) => {
-      const hoodNorm = nTex.clone();
-      hoodNorm.wrapS = THREE.RepeatWrapping;
-      hoodNorm.wrapT = THREE.RepeatWrapping;
-      hoodNorm.repeat.set(1.8, 1.8);
-      outerHoodMat.normalMap = hoodNorm;
-      outerHoodMat.normalScale = new THREE.Vector2(0.6, 0.6);
-      outerHoodMat.needsUpdate = true;
-    });
-
-    const outerHood = new THREE.Mesh(
-      new THREE.SphereGeometry(0.098, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.48),
-      outerHoodMat
+    // 背中に自然に落ちた3Dフード (Natural Dropped Hoodie Hood)
+    const hoodMat = new THREE.MeshStandardMaterial({ color: 0x141f36, roughness: 0.8 });
+    const hood = new THREE.Mesh(
+      new THREE.SphereGeometry(0.095, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.45),
+      hoodMat
     );
-    outerHood.rotation.x = Math.PI * 0.95;
-    outerHood.position.set(0, 0.11, -0.115);
-    outerHood.scale.set(1.06, 0.66, 0.86);
-    hoodieGroup.add(outerHood);
+    hood.rotation.x = Math.PI * 0.95;
+    hood.position.set(0, 0.11, -0.115);
+    hood.scale.set(1.05, 0.65, 0.85);
+    hoodieGroup.add(hood);
 
-    // --- 2. フード内側の深紺ライニング裏地 (Deep Navy Cotton Interior Lining) ---
-    const innerLiningMat = new THREE.MeshStandardMaterial({
-      color: 0x111a28,
-      roughness: 0.9,
-      side: THREE.BackSide
-    });
-    const innerHood = new THREE.Mesh(
-      new THREE.SphereGeometry(0.094, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.48),
-      innerLiningMat
-    );
-    innerHood.rotation.x = Math.PI * 0.95;
-    innerHood.position.set(0, 0.11, -0.115);
-    innerHood.scale.set(1.04, 0.64, 0.84);
-    hoodieGroup.add(innerHood);
+    // 胸元から垂れる白コード紐 (Natural Drawstrings)
+    const cordMat = new THREE.MeshStandardMaterial({ color: 0xf5f5fa, roughness: 0.4 });
+    const agletMat = new THREE.MeshStandardMaterial({ color: 0xdcdce2, metalness: 0.9, roughness: 0.15 });
 
-    // --- 3. フード口のパイピング・折り返し縁 (Hood Rim Seam) ---
-    const rimMat = new THREE.MeshStandardMaterial({ color: 0x142036, roughness: 0.8 });
-    const hoodRim = new THREE.Mesh(
-      new THREE.TorusGeometry(0.076, 0.010, 8, 24),
-      rimMat
-    );
-    hoodRim.rotation.x = Math.PI * 0.45;
-    hoodRim.position.set(0, 0.142, -0.06);
-    hoodieGroup.add(hoodRim);
-
-    // 首周りのリブカラーバンド (Neckband Collar)
-    const collarBand = new THREE.Mesh(
-      new THREE.TorusGeometry(0.082, 0.009, 8, 24, Math.PI * 1.1),
-      rimMat
-    );
-    collarBand.rotation.x = Math.PI * 0.52;
-    collarBand.rotation.z = Math.PI * 0.95;
-    collarBand.position.set(0, 0.138, 0.02);
-    hoodieGroup.add(collarBand);
-
-    // --- 4. 首元のシルバーハトメ金具 (Chrome Grommet Eyelets) ---
-    const grommetMat = new THREE.MeshStandardMaterial({
-      color: 0xd0d0d8,
-      metalness: 0.95,
-      roughness: 0.15
-    });
-    [-0.030, 0.030].forEach(x => {
-      const grommet = new THREE.Mesh(
-        new THREE.TorusGeometry(0.006, 0.002, 8, 16),
-        grommetMat
-      );
-      grommet.position.set(x, 0.125, 0.136);
-      grommet.rotation.x = 0.25;
-      hoodieGroup.add(grommet);
-    });
-
-    // --- 5. 胸元から垂れるホワイトドローコード＆クロームアグレット (Drawstrings with Aglets) ---
-    const cordMat = new THREE.MeshStandardMaterial({ color: 0xf5f5fa, roughness: 0.45 });
-    const agletMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e8, metalness: 0.95, roughness: 0.12 });
-
-    [-0.030, 0.030].forEach(x => {
-      const rotZ = x < 0 ? -0.04 : 0.04;
-
+    [-0.032, 0.032].forEach(x => {
       // 紐本体
-      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.0036, 0.0036, 0.18, 10), cordMat);
-      cord.position.set(x, 0.035, 0.138);
-      cord.rotation.z = rotZ;
-      cord.rotation.x = -0.06;
+      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.20, 8), cordMat);
+      cord.position.set(x, 0.03, 0.138);
       hoodieGroup.add(cord);
 
-      // 金属アグレット先端 (Chrome Aglet Cap)
-      const aglet = new THREE.Mesh(new THREE.CylinderGeometry(0.0046, 0.0046, 0.024, 10), agletMat);
-      aglet.position.set(x + (x < 0 ? -0.004 : 0.004), -0.055, 0.144);
-      aglet.rotation.z = rotZ;
-      aglet.rotation.x = -0.06;
+      // 金属アグレット先端
+      const aglet = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.022, 8), agletMat);
+      aglet.position.set(x, -0.075, 0.138);
       hoodieGroup.add(aglet);
     });
 

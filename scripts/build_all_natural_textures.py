@@ -31,47 +31,40 @@ def apply_alpha(canvas, mask):
     return res
 
 # -------------------------------------------------------------
-# 1. さかなパーカー (Fish Hoodie 3D)
+# 1. さかなパーカー (Fish Hoodie)
 # -------------------------------------------------------------
-print("Processing 1. さかなパーカー (Fish Hoodie 3D)...")
-if os.path.exists("さかなパーカー３D.jpg") and os.path.exists("scripts/build_final_costume.py"):
-    import subprocess
-    print("  -> Building 3D hoodie textures from さかなパーカー３D.jpg...")
-    subprocess.run(["python3", "scripts/build_final_costume.py"], check=True)
-    if os.path.exists("scripts/fix_tops_collar.py"):
-        subprocess.run(["python3", "scripts/fix_tops_collar.py"], check=True)
-else:
-    hoodie_src = Image.open("さかなパーカー.png").convert("RGBA")
-    hoodie_navy = (20, 31, 54, 255)
-    canvas_tops = Image.new("RGBA", (1024, 2048), hoodie_navy)
+print("Processing 1. さかなパーカー...")
+hoodie_src = Image.open("さかなパーカー.png").convert("RGBA")
+hoodie_navy = (20, 31, 54, 255)
+canvas_tops = Image.new("RGBA", (1024, 2048), hoodie_navy)
 
-    f_crop = hoodie_src.crop((440, 260, 1060, 910))
-    f_crop_res = f_crop.resize((540, 560), Image.Resampling.LANCZOS)
-    f_feathered = feather_image(f_crop_res, 18)
-    canvas_tops.paste(f_feathered, (242, 265), f_feathered)
+f_crop = hoodie_src.crop((440, 260, 1060, 910))
+f_crop_res = f_crop.resize((540, 560), Image.Resampling.LANCZOS)
+f_feathered = feather_image(f_crop_res, 18)
+canvas_tops.paste(f_feathered, (242, 265), f_feathered)
 
-    s_crop = hoodie_src.crop((160, 420, 360, 680))
-    s_l = s_crop.resize((180, 240), Image.Resampling.LANCZOS)
-    s_feathered_l = feather_image(s_l, 14)
-    s_feathered_r = ImageOps.mirror(s_feathered_l)
+s_crop = hoodie_src.crop((160, 420, 360, 680))
+s_l = s_crop.resize((180, 240), Image.Resampling.LANCZOS)
+s_feathered_l = feather_image(s_l, 14)
+s_feathered_r = ImageOps.mirror(s_feathered_l)
 
-    canvas_tops.paste(s_feathered_l, (48, 195), s_feathered_l)
-    canvas_tops.paste(s_feathered_r, (796, 195), s_feathered_r)
-    canvas_tops.paste(s_feathered_l, (48, 1225), s_feathered_l)
-    canvas_tops.paste(s_feathered_r, (796, 1225), s_feathered_r)
+canvas_tops.paste(s_feathered_l, (48, 195), s_feathered_l)
+canvas_tops.paste(s_feathered_r, (796, 195), s_feathered_r)
+canvas_tops.paste(s_feathered_l, (48, 1225), s_feathered_l)
+canvas_tops.paste(s_feathered_r, (796, 1225), s_feathered_r)
 
-    b_crop = hoodie_src.crop((460, 270, 1040, 660)).resize((540, 460), Image.Resampling.LANCZOS)
-    b_feathered = feather_image(b_crop, 18)
-    canvas_tops.paste(b_feathered, (242, 1300), b_feathered)
+b_crop = hoodie_src.crop((460, 270, 1040, 660)).resize((540, 460), Image.Resampling.LANCZOS)
+b_feathered = feather_image(b_crop, 18)
+canvas_tops.paste(b_feathered, (242, 1300), b_feathered)
 
-    apply_alpha(canvas_tops, tops_alpha).save(f"{OUT_DIR}/tops_hoodie.png")
+apply_alpha(canvas_tops, tops_alpha).save(f"{OUT_DIR}/tops_hoodie.png")
 
-    canvas_bot = Image.new("RGBA", (1024, 1024), hoodie_navy)
-    b_draw = ImageDraw.Draw(canvas_bot)
-    b_draw.line([(240, 80), (280, 340)], fill=(14, 22, 38, 255), width=3)
-    b_draw.line([(784, 80), (744, 340)], fill=(14, 22, 38, 255), width=3)
-    b_draw.rectangle([0, 560, 1024, 617], fill=(15, 23, 40, 255))
-    apply_alpha(canvas_bot, bottoms_alpha).save(f"{OUT_DIR}/bottoms_hoodie.png")
+canvas_bot = Image.new("RGBA", (1024, 1024), hoodie_navy)
+b_draw = ImageDraw.Draw(canvas_bot)
+b_draw.line([(240, 80), (280, 340)], fill=(14, 22, 38, 255), width=3)
+b_draw.line([(784, 80), (744, 340)], fill=(14, 22, 38, 255), width=3)
+b_draw.rectangle([0, 560, 1024, 617], fill=(15, 23, 40, 255))
+apply_alpha(canvas_bot, bottoms_alpha).save(f"{OUT_DIR}/bottoms_hoodie.png")
 
 # -------------------------------------------------------------
 # 2. 蒼藍の袴（袴１）
