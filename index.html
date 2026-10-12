@@ -2182,6 +2182,29 @@
       to { transform: scale(1.0) translateY(0); opacity: 1; }
     }
 
+    .timeout-next-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 20px;
+      font-size: 14.5px;
+      font-weight: 900;
+      color: #ffffff;
+      background: linear-gradient(135deg, #ff3366, #ff7b00);
+      border: 1.5px solid #ffe600;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 0 16px rgba(255, 51, 102, 0.7);
+      transition: all 0.2s ease;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    .timeout-next-btn:hover, .timeout-next-btn:active {
+      transform: scale(1.06);
+      background: linear-gradient(135deg, #ff1a53, #ff9500);
+      box-shadow: 0 0 24px rgba(255, 120, 0, 0.9);
+    }
+
     /* === 漢字定着度 3段階マスター (銅・銀・金) === */
     .kanji-tile.bronze {
       background: linear-gradient(135deg, rgba(205, 127, 50, 0.25) 0%, rgba(139, 69, 19, 0.3) 100%);
@@ -6042,6 +6065,7 @@ const gameState = {
   sessionExp: 0,
   sessionResults: [],
   isProcessingAnswer: false,
+  isTimeoutPending: false,
   soundEnabled: true,
   currentInputMode: 'blocks', // 'blocks' or 'keyboard'
   lastInputChar: '',
@@ -6975,6 +6999,17 @@ function initInputListeners() {
     const customModal = document.getElementById('custom-modal');
     if (customModal && customModal.style.display !== 'none') return;
 
+    // タイムアウト表示中に Enter / Space が押されたら即座に次の問題へ進む
+    if (gameState.isTimeoutPending) {
+      if (e.key === 'Enter' || e.key === ' ' || e.code === 'Enter' || e.code === 'Space') {
+        e.preventDefault();
+        if (typeof proceedAfterTimeout === 'function') {
+          proceedAfterTimeout();
+        }
+      }
+      return;
+    }
+
     // ゲームバトル中かつ出題中のみ受付
     if (!gameState.currentQuestion || gameState.isProcessingAnswer) return;
 
@@ -7416,7 +7451,18 @@ function startAiFocusTraining() {
   initBattleSession();
 }
 
+let timeoutTransitionTimer = null;
+
 function initBattleSession() {
+  if (gameState.timerInterval) {
+    clearInterval(gameState.timerInterval);
+    gameState.timerInterval = null;
+  }
+  if (timeoutTransitionTimer) {
+    clearTimeout(timeoutTransitionTimer);
+    timeoutTransitionTimer = null;
+  }
+
   // モーダルを閉じる
   const startModal = document.getElementById('start-modal');
   if (startModal) startModal.style.display = 'none';
@@ -7432,6 +7478,7 @@ function initBattleSession() {
   gameState.sessionExp = 0;
   gameState.sessionResults = [];
   gameState.isProcessingAnswer = false;
+  gameState.isTimeoutPending = false;
 
   // クルー表示リセット
   for (let i = 0; i < 5; i++) {
@@ -7467,8 +7514,16 @@ function initBattleSession() {
 }
 
 function loadQuestion() {
-  clearInterval(gameState.timerInterval);
+  if (gameState.timerInterval) {
+    clearInterval(gameState.timerInterval);
+    gameState.timerInterval = null;
+  }
+  if (timeoutTransitionTimer) {
+    clearTimeout(timeoutTransitionTimer);
+    timeoutTransitionTimer = null;
+  }
   gameState.isProcessingAnswer = false;
+  gameState.isTimeoutPending = false;
   gameState.currentAnswer = '';
   gameState.romajiBuffer = '';
   gameState.lastInputChar = '';
@@ -7602,6 +7657,10 @@ function setupCharBlocks(targetKana) {
 }
 
 function startTimer() {
+  if (gameState.timerInterval) {
+    clearInterval(gameState.timerInterval);
+    gameState.timerInterval = null;
+  }
   gameState.timerValue = 30.0;
   updateTimerDisplay();
 
@@ -7610,7 +7669,10 @@ function startTimer() {
     if (gameState.timerValue <= 0) {
       gameState.timerValue = 0;
       updateTimerDisplay();
-      clearInterval(gameState.timerInterval);
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+      }
       handleTimeout();
     } else {
       updateTimerDisplay();
@@ -7774,59 +7836,135 @@ function handleWrongAnswer() {
   }, 600);
 }
 
-function handleTimeout() {
-  gameState.isProcessingAnswer = true;
-  playSound('wrong');
+function proceedAfterTimeout() {
+  if (timeoutTransitionTimer) {
+    clearTimeout(timeoutTransitionTimer);
+    timeoutTransitionTimer = null;
+  }
+  if (!gameState.isTimeoutPending) return;
+  gameState.isTimeoutPending = false;
 
-  gameState.combo = 0;
-
-  // 搭乗員（ライフ）を1人失う
-  gameState.crew--;
-  const lostSlot = document.getElementById(`crew-${gameState.crew}`);
-  if (lostSlot) {
-    lostSlot.classList.add('lost');
+  try {
+    const elTip = document.getElementById('timeout-tip-box');
+    if (elTip) {
+      elTip.style.display = 'none';
+      elTip.innerHTML = '';
+    }
+  } catch (e) {
+    console.warn('clear tip-box failed:', e);
   }
 
-  // 画面揺れ ＆ 被弾フラッシュ
-  const flash = document.getElementById('flash-overlay');
-  if (flash) {
-    flash.className = 'flash-overlay flash-wrong';
-    flash.style.opacity = '0.9';
-    setTimeout(() => { flash.style.opacity = '0'; }, 400);
-  }
-
-  // 正解表示
-  const elTip = document.getElementById('timeout-tip-box');
-  if (elTip) {
-    elTip.style.display = 'block';
-    elTip.innerHTML = `⚠️ TIME OUT！ 正解は「<strong>${gameState.currentQuestion.kana}</strong>」でした！`;
-  }
-
-  // 苦手漢字として記録
-  recordMistake(gameState.currentQuestion.kanji, gameState.currentQuestion.word, gameState.currentQuestion.kana);
-
-  gameState.sessionResults.push({
-    kanji: gameState.currentQuestion.kanji,
-    word: gameState.currentQuestion.word,
-    kana: gameState.currentQuestion.kana,
-    isCorrect: false
-  });
-
-  // クルーが全滅したらゲームオーバー
-  if (gameState.crew <= 0) {
-    setTimeout(() => {
+  try {
+    if (gameState.crew <= 0) {
       showResultModal(false);
-    }, 1600);
-  } else {
-    setTimeout(() => {
+    } else {
       if (gameState.currentStageIndex + 1 < gameState.totalQuestions) {
         gameState.currentStageIndex++;
         loadQuestion();
       } else {
         showResultModal(true);
       }
-    }, 1800);
+    }
+  } catch (err) {
+    console.error('proceedAfterTimeout navigation error:', err);
+    // フォールバック: リザルト画面を確実に表示してフリーズを回避
+    try {
+      showResultModal(gameState.crew > 0);
+    } catch (e2) {
+      console.error('fallback showResultModal failed:', e2);
+    }
   }
+}
+
+function handleTimeout() {
+  if (gameState.timerInterval) {
+    clearInterval(gameState.timerInterval);
+    gameState.timerInterval = null;
+  }
+  // 既に回答判定中またはタイムアウト処理中の多重呼び出しを防止
+  if (gameState.isProcessingAnswer || gameState.isTimeoutPending) return;
+
+  gameState.isProcessingAnswer = true;
+  gameState.isTimeoutPending = true;
+
+  try {
+    playSound('wrong');
+  } catch (e) {
+    console.warn('playSound wrong failed:', e);
+  }
+
+  gameState.combo = 0;
+
+  try {
+    // 搭乗員（ライフ）を1人失う（0未満にならないようクランプ）
+    gameState.crew = Math.max(0, gameState.crew - 1);
+    const lostSlot = document.getElementById(`crew-${gameState.crew}`);
+    if (lostSlot) {
+      lostSlot.classList.add('lost');
+    }
+  } catch (e) {
+    console.warn('crew update failed:', e);
+  }
+
+  try {
+    // 画面揺れ ＆ 被弾フラッシュ
+    const flash = document.getElementById('flash-overlay');
+    if (flash) {
+      flash.className = 'flash-overlay flash-wrong';
+      flash.style.opacity = '0.9';
+      setTimeout(() => { if (flash) flash.style.opacity = '0'; }, 400);
+    }
+  } catch (e) {
+    console.warn('flash effect failed:', e);
+  }
+
+  const curQ = gameState.currentQuestion;
+  const targetKana = (curQ && curQ.kana) ? curQ.kana : '—';
+  const targetKanji = (curQ && curQ.kanji) ? curQ.kanji : '';
+  const targetWord = (curQ && curQ.word) ? curQ.word : '';
+
+  try {
+    // 正解表示 ＆ 即座に進める「つぎへ進む」ボタン（放置しても1.8秒後に自動で進む）
+    const elTip = document.getElementById('timeout-tip-box');
+    if (elTip) {
+      elTip.style.display = 'block';
+      elTip.innerHTML = `⚠️ TIME OUT！ 正解は「<strong>${targetKana}</strong>」でした！` +
+        `<div style="margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">` +
+        `<span style="font-size: 12px; color: #ffd700; letter-spacing: 0.3px;">（まもなく自動で進みます）</span>` +
+        `<button id="btn-timeout-next" class="timeout-next-btn" onclick="proceedAfterTimeout()">つぎへ進む ➔</button>` +
+        `</div>`;
+    }
+  } catch (e) {
+    console.warn('tip box update failed:', e);
+  }
+
+  try {
+    // 苦手漢字として安全に記録
+    if (targetKanji) {
+      recordMistake(targetKanji, targetWord, targetKana);
+    }
+  } catch (e) {
+    console.warn('recordMistake failed:', e);
+  }
+
+  try {
+    gameState.sessionResults.push({
+      kanji: targetKanji,
+      word: targetWord,
+      kana: targetKana,
+      isCorrect: false
+    });
+  } catch (e) {
+    console.warn('sessionResults push failed:', e);
+  }
+
+  // 自動遷移タイマー（手動タップやEnterがなければ1.8秒後に自動でスムーズに次へ進む）
+  if (timeoutTransitionTimer) {
+    clearTimeout(timeoutTransitionTimer);
+  }
+  timeoutTransitionTimer = setTimeout(() => {
+    proceedAfterTimeout();
+  }, 1800);
 }
 
 function showComboPopup(combo, isSpeedBonus) {
@@ -7855,24 +7993,46 @@ function showComboPopup(combo, isSpeedBonus) {
 }
 
 function recordMastery(kanji) {
-  const mastery = getStorage('kanji_jet_mastery', {});
-  mastery[kanji] = (mastery[kanji] || 0) + 1;
-  setStorage('kanji_jet_mastery', mastery);
+  try {
+    const mastery = getStorage('kanji_jet_mastery', {});
+    if (typeof mastery === 'object' && mastery !== null) {
+      mastery[kanji] = (mastery[kanji] || 0) + 1;
+      setStorage('kanji_jet_mastery', mastery);
+    }
+  } catch (e) {
+    console.warn('recordMastery error:', e);
+  }
 }
 
 function recordMistake(kanji, word, kana) {
-  const mistakes = getStorage('kanji_jet_mistakes', []);
-  const existingIdx = mistakes.findIndex(m => m.kanji === kanji);
-  if (existingIdx === -1) {
-    mistakes.push({ kanji, word, kana, count: 1 });
-  } else {
-    mistakes[existingIdx].count = (mistakes[existingIdx].count || 1) + 1;
+  try {
+    let mistakes = getStorage('kanji_jet_mistakes', []);
+    if (!Array.isArray(mistakes)) {
+      mistakes = [];
+    }
+    const existingIdx = mistakes.findIndex(m => m && m.kanji === kanji);
+    if (existingIdx === -1) {
+      mistakes.push({ kanji: kanji || '', word: word || '', kana: kana || '', count: 1 });
+    } else {
+      mistakes[existingIdx].count = (mistakes[existingIdx].count || 1) + 1;
+    }
+    setStorage('kanji_jet_mistakes', mistakes);
+  } catch (e) {
+    console.warn('recordMistake error:', e);
   }
-  setStorage('kanji_jet_mistakes', mistakes);
 }
 
 function showResultModal(cleared) {
-  clearInterval(gameState.timerInterval);
+  if (gameState.timerInterval) {
+    clearInterval(gameState.timerInterval);
+    gameState.timerInterval = null;
+  }
+  if (timeoutTransitionTimer) {
+    clearTimeout(timeoutTransitionTimer);
+    timeoutTransitionTimer = null;
+  }
+  gameState.isProcessingAnswer = false;
+  gameState.isTimeoutPending = false;
   try {
     pauseBackgroundVideo();
   } catch (e) {
@@ -9601,6 +9761,13 @@ function initGame() {
   // 画面クリックでオーディオコンテキスト再開 ＆ フォーカス補助
   window.addEventListener('pointerdown', (e) => {
     getAudioContext();
+    // タイムアウト表示中に画面タップで即座に次の問題へ進む（ボタン自体のクリックイベントと競合しないよう配慮）
+    if (gameState.isTimeoutPending && !e.target.closest('#btn-timeout-next')) {
+      if (typeof proceedAfterTimeout === 'function') {
+        proceedAfterTimeout();
+        return;
+      }
+    }
     if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.closest('button') || e.target.closest('.modal-overlay'))) {
       return;
     }
