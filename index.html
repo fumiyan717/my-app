@@ -307,6 +307,9 @@
       flex-direction: column;
       align-items: center;
       min-width: 240px;
+      width: fit-content;
+      max-width: 94vw;
+      box-sizing: border-box;
       backdrop-filter: blur(6px);
       position: relative;
     }
@@ -1403,9 +1406,14 @@
       }
       .target-sentence-hint {
         font-size: 11.5px;
-        padding: 2px 10px;
+        padding: 3px 10px;
         margin-top: 4px;
         margin-bottom: 10px;
+        max-width: 88vw;
+        white-space: normal;
+        word-break: auto-phrase;
+        overflow-wrap: break-word;
+        line-height: 1.35;
       }
       .room-grade-tabs {
         grid-template-columns: repeat(3, 1fr);
@@ -1436,8 +1444,10 @@
         text-indent: 6px;
       }
       .target-kanji-box {
-        min-width: 200px;
-        padding: 10px 18px;
+        min-width: 180px;
+        width: fit-content;
+        max-width: 92vw;
+        padding: 8px 16px;
       }
       .timeout-tip-box {
         font-size: 14px;
@@ -1480,18 +1490,21 @@
 
     .target-sentence-hint {
       display: none;
-      font-size: 13px;
+      font-size: 13.5px;
       color: #ffd700;
       margin-top: 6px;
       margin-bottom: 12px;
       background: rgba(0, 0, 0, 0.65);
-      padding: 3px 14px;
+      padding: 4px 16px;
       border-radius: 12px;
       border: 1px solid rgba(255, 215, 0, 0.4);
-      max-width: 90%;
-      white-space: normal;
+      white-space: nowrap;
+      width: fit-content;
+      max-width: 95vw;
+      box-sizing: border-box;
       line-height: 1.35;
       text-align: center;
+      letter-spacing: 0.5px;
     }
 
     .detail-char-box {
@@ -1743,6 +1756,44 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
+    }
+
+    .hangar-locked-notice {
+      background: linear-gradient(135deg, rgba(40, 25, 10, 0.88) 0%, rgba(25, 15, 5, 0.95) 100%);
+      border: 1.5px dashed #ffaa00;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #ffd880;
+      font-size: 12px;
+      line-height: 1.5;
+      box-shadow: 0 0 15px rgba(255, 170, 0, 0.2);
+      text-align: left;
+    }
+    .hangar-locked-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(255, 170, 0, 0.18);
+      border: 1px solid #ffaa00;
+      color: #ffaa00;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+      vertical-align: middle;
+      line-height: 1.3;
+    }
+    .hangar-locked-section {
+      position: relative;
+      opacity: 0.55;
+      pointer-events: none !important;
+      user-select: none;
+      filter: grayscale(0.35);
+      cursor: not-allowed !important;
     }
 
     /* === 提案1: マイハンガー パイロットセクション === */
@@ -3504,7 +3555,13 @@
 <body>
 
   <!-- BGM用オーディオ要素（ブラウザ互換性と確実な再生のためDOM配置） -->
-  <audio id="bgm-home" src="./assets/bgm_home.mp3" preload="auto" loop playsinline></audio>
+  <audio id="bgm-home" preload="auto" loop playsinline>
+    <source src="assets/和風サイバー.mp3" type="audio/mpeg">
+    <source src="assets/%E5%92%8C%E9%A2%A8%E3%82%B5%E3%82%A4%E3%83%90%E3%83%BC.mp3" type="audio/mpeg">
+    <source src="和風サイバー.mp3" type="audio/mpeg">
+    <source src="%E5%92%8C%E9%A2%A8%E3%82%B5%E3%82%A4%E3%83%90%E3%83%BC.mp3" type="audio/mpeg">
+    <source src="./assets/bgm_home.mp3" type="audio/mpeg">
+  </audio>
   <audio id="bgm-battle" preload="auto" loop playsinline>
     <source src="assets/Fierro%20y%20Bronce.mp3" type="audio/mpeg">
     <source src="assets/Fierro y Bronce.mp3" type="audio/mpeg">
@@ -3569,7 +3626,7 @@
       <div class="target-kanji-box">
         <div class="kanji-text" id="target-kanji">青空</div>
         <div class="kanji-hint" id="target-hint" style="display: none;"></div>
-        <div class="target-sentence-hint" id="target-sentence-hint" style="display: none; font-size: 13px; color: #ffd700; margin-top: 4px; background: rgba(0,0,0,0.5); padding: 3px 12px; border-radius: 12px; border: 1px solid rgba(255,215,0,0.4); max-width: 90%; white-space: normal; line-height: 1.3;"></div>
+        <div class="target-sentence-hint" id="target-sentence-hint" style="display: none;"></div>
         <div class="kanji-chars-count" id="target-chars-count">4もじ</div>
       </div>
       <!-- タイムアウト時の正解表示（文字数バッジと被らないよう独立配置） -->
@@ -3697,7 +3754,7 @@
         <!-- 整理されたステータスドック: パイロットカード + 学習ステータス -->
         <div class="home-status-bar" style="margin: 0; padding: 6px 12px; gap: 8px;">
           <!-- 🧑🚀 パイロットカード（クリックでマイハンガー起動） -->
-          <div class="home-pilot-card" onclick="openHangarModal('pilot')" title="クリックで『マイハンガー』を開く（アバター・二つ名・機体・ビームをカスタマイズ）">
+          <div class="home-pilot-card" onclick="openHangarModal('pilot')" title="クリックで『マイハンガー』を開く（二つ名コードネーム設定）">
             <!-- アバターサークル表示 -->
             <div class="avatar-icon-circle" id="home-avatar-icon" style="width: 38px; height: 38px; flex-shrink: 0;">
               <!-- SVG挿入 -->
@@ -3857,8 +3914,8 @@
       <!-- 下部整理されたナビゲーションメニュー（児童専用4ボタンにスッキリ集約） -->
       <div class="home-nav-container" style="margin-top: 8px;">
         <div class="home-nav-btns" style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
-          <button class="home-nav-btn" onclick="openHangarModal('ship')" style="flex: 1.1; text-align: center; justify-content: center; font-size: 13.5px; padding: 10px 14px;" title="機体カラー・ビーム・アバター・二つ名をカスタマイズ">
-            🚀 マイハンガー (機体・アバター・二つ名)
+          <button class="home-nav-btn" onclick="openHangarModal('pilot')" style="flex: 1.1; text-align: center; justify-content: center; font-size: 13.5px; padding: 10px 14px;" title="マイハンガー（二つ名設定可能 / 機体・アバター等は調整中）">
+            🚀 マイハンガー <span class="hangar-locked-badge">🔒 一部調整中</span>
           </button>
           <button class="home-nav-btn" onclick="openKanjiMuseum('kanji')" style="flex: 1.2; text-align: center; justify-content: center; font-size: 13.5px; padding: 10px 14px;" title="全1026字図鑑・AI弱点分析・マスター認定証">
             🏛️ 漢字ミュージアム (図鑑・AI分析・賞状)
@@ -4238,47 +4295,58 @@
       <div class="custom-modal-header">
         <div class="room-title-box">
           <h2 class="room-title">🚀 マイハンガー (機体・アバター・二つ名)</h2>
-          <p class="room-desc">自分だけの戦闘機やパイロットアバター、二つ名コードネームをカスタマイズ！</p>
+          <p class="room-desc">二つ名コードネームの変更が可能です！（※機体・着せ替え・アバター機能は現在調整中）</p>
         </div>
         <button class="room-close-btn" onclick="closeCustomModal()">✕ とじる</button>
       </div>
 
       <!-- 切り替えタブ -->
       <div class="custom-tab-buttons" style="padding: 0 16px;">
-        <button class="custom-tab-btn" id="btn-tab-avatar" onclick="switchCustomMainTab('pilot')">
-          🧑🚀 パイロット設定 (アバター＆二つ名) <span class="avatar-prep-badge">✨ 3D VRM対応!</span>
+        <button class="custom-tab-btn active" id="btn-tab-avatar" onclick="switchCustomMainTab('pilot')">
+          🧑🚀 パイロット設定 (二つ名設定)
         </button>
-        <button class="custom-tab-btn active" id="btn-tab-ship" onclick="switchCustomMainTab('ship')">
-          ✈️ ジェット機＆ビーム
+        <button class="custom-tab-btn" id="btn-tab-ship" onclick="switchCustomMainTab('ship')">
+          ✈️ ジェット機＆ビーム <span class="hangar-locked-badge">🔒 調整中</span>
         </button>
       </div>
 
       <!-- スクロール可能なボディエリア -->
       <div class="custom-modal-body">
         <!-- 1. ジェット機＆レーザー タブコンテンツ -->
-        <div id="custom-tab-content-ship">
-          <!-- リアルタイム プレビュードック -->
-          <div class="custom-preview-dock" id="custom-preview-dock">
-            <canvas id="custom-preview-canvas" class="custom-preview-canvas" width="320" height="110"></canvas>
-            <div class="custom-preview-names">
-              <span>機体: <strong id="custom-preview-ship-name" style="color: #00e5ff;">ブルーホーク</strong></span>
-              <span>ビーム: <strong id="custom-preview-laser-name" style="color: #00e5ff;">蒼光シアン</strong></span>
+        <div id="custom-tab-content-ship" style="display: none;">
+          <!-- 調整中バナー -->
+          <div class="hangar-locked-notice">
+            <span style="font-size: 20px;">🔒</span>
+            <div>
+              <strong style="color: #ffaa00; font-size: 13px;">機体・ビームカスタマイズ機能は現在調整中です</strong><br>
+              <span style="color: #cbd5e1; font-size: 11px;">次期アップデートでの解放までしばらくお待ちください。現在は標準機体・ビームで出撃します。</span>
             </div>
           </div>
 
-          <h3 style="font-size: 14.5px; color: var(--neon-yellow); margin: 12px 0 6px 0; text-align: left;">✈️ 戦闘機の機体・カラー (適正学年・質の高い学習で解放！)</h3>
-          <div class="custom-row" id="custom-ship-row">
-            <!-- JS動的生成 -->
-          </div>
+          <div class="hangar-locked-section">
+            <!-- リアルタイム プレビュードック -->
+            <div class="custom-preview-dock" id="custom-preview-dock">
+              <canvas id="custom-preview-canvas" class="custom-preview-canvas" width="320" height="110"></canvas>
+              <div class="custom-preview-names">
+                <span>機体: <strong id="custom-preview-ship-name" style="color: #00e5ff;">ブルーホーク</strong></span>
+                <span>ビーム: <strong id="custom-preview-laser-name" style="color: #00e5ff;">蒼光シアン</strong></span>
+              </div>
+            </div>
 
-          <h3 style="font-size: 14.5px; color: var(--primary-cyan); margin: 16px 0 6px 0; text-align: left;">⚡ レーザービームのカラー</h3>
-          <div class="custom-row" id="custom-laser-row">
-            <!-- JS動的生成 -->
+            <h3 style="font-size: 14.5px; color: var(--neon-yellow); margin: 12px 0 6px 0; text-align: left;">✈️ 戦闘機の機体・カラー (適正学年・質の高い学習で解放！)</h3>
+            <div class="custom-row" id="custom-ship-row">
+              <!-- JS動的生成 -->
+            </div>
+
+            <h3 style="font-size: 14.5px; color: var(--primary-cyan); margin: 16px 0 6px 0; text-align: left;">⚡ レーザービームのカラー</h3>
+            <div class="custom-row" id="custom-laser-row">
+              <!-- JS動的生成 -->
+            </div>
           </div>
         </div>
 
         <!-- 2. パイロット設定 タブコンテンツ（3D VRMモデル＆二つ名コードネーム） -->
-        <div id="custom-tab-content-avatar" style="display: none;">
+        <div id="custom-tab-content-avatar" style="display: block;">
           <div class="hangar-pilot-section">
             <!-- 左側: アバタープレビュー ＆ 二つ名スロット -->
             <div style="background: rgba(10, 20, 42, 0.7); border: 1.5px solid rgba(0, 229, 255, 0.3); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
@@ -4286,16 +4354,16 @@
                 <div id="avatar-full-preview" style="width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; position: relative;">
                   <!-- JS動的レンダリング -->
                 </div>
-                <div id="avatar-preview-badge" style="position: absolute; bottom: 4px; background: rgba(5, 12, 24, 0.9); border: 1px solid #00ff88; color: #00ff88; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(0,0,0,0.6);">
-                  🐱 3Dマスコット
+                <div id="avatar-preview-badge" style="position: absolute; bottom: 4px; background: rgba(5, 12, 24, 0.9); border: 1px solid #ffaa00; color: #ffaa00; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(0,0,0,0.6);">
+                  🔒 アバター調整中
                 </div>
               </div>
 
-              <!-- 二つ名（コードネーム）編成 -->
+              <!-- 二つ名（コードネーム）編成（利用可能） -->
               <div style="width: 100%; border-top: 1px solid rgba(0, 229, 255, 0.2); padding-top: 8px;">
                 <div style="font-size: 11px; color: #8cb0d0; letter-spacing: 1px; font-weight: bold;">PILOT CODENAME</div>
                 <div class="pilot-preview-name" id="pilot-modal-preview" style="font-size: 16px; margin: 4px 0;">疾風のハヤブサ01号</div>
-                <div style="font-size: 10.5px; color: #00ff88; margin-bottom: 8px;">🛡️ 個人情報ゼロ認証</div>
+                <div style="font-size: 10.5px; color: #00ff88; margin-bottom: 8px;">🛡️ 個人情報ゼロ認証 (変更可能)</div>
 
                 <!-- 3つのスロット選択 -->
                 <div style="display: flex; flex-direction: column; gap: 6px; width: 100%; text-align: left;">
@@ -4327,18 +4395,28 @@
 
             <!-- 右側: アバター設定パネル（3D ネコ ＆ 3D ロボット ＆ きせかえ） -->
             <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
-              <!-- アバタータイプ切り替えバー -->
-              <div class="avatar-type-bar">
-                <button class="avatar-type-btn active" id="btn-type-vrm" onclick="selectAvatarType('vrm')">
-                  🐱 ネコマスコット
-                </button>
-                <button class="avatar-type-btn" id="btn-type-robot" onclick="selectAvatarType('robot')">
-                  🤖 サイバーロボ
-                </button>
-                <button class="avatar-type-btn" id="btn-type-costume" onclick="selectAvatarType('costume')">
-                  👗 きせかえ
-                </button>
+              <!-- 調整中案内バナー -->
+              <div class="hangar-locked-notice">
+                <span style="font-size: 20px;">🔒</span>
+                <div>
+                  <strong style="color: #ffaa00; font-size: 13px;">アバター＆着せ替え機能は現在調整中です</strong><br>
+                  <span style="color: #cbd5e1; font-size: 11px;">左側の「二つ名コードネーム」は自由にカスタマイズ可能です！アバターと衣装の変更は調整完了までロックされています。</span>
+                </div>
               </div>
+
+              <div class="hangar-locked-section">
+                <!-- アバタータイプ切り替えバー -->
+                <div class="avatar-type-bar">
+                  <button class="avatar-type-btn active" id="btn-type-vrm" onclick="selectAvatarType('vrm')">
+                    🐱 ネコマスコット <span class="hangar-locked-badge">🔒 調整中</span>
+                  </button>
+                  <button class="avatar-type-btn" id="btn-type-robot" onclick="selectAvatarType('robot')">
+                    🤖 サイバーロボ <span class="hangar-locked-badge">🔒 調整中</span>
+                  </button>
+                  <button class="avatar-type-btn" id="btn-type-costume" onclick="selectAvatarType('costume')">
+                    👗 きせかえ <span class="hangar-locked-badge">🔒 調整中</span>
+                  </button>
+                </div>
 
               <!-- 共通 3D ビューポート（全身が美しく収まる320px） -->
               <div id="vrm-viewer-container" style="position: relative; width: 100%; height: 320px; min-height: 300px; background: radial-gradient(circle at 50% 50%, rgba(13, 30, 60, 0.9) 0%, rgba(5, 12, 25, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.18);">
@@ -4486,6 +4564,7 @@
                   </div>
                 </div>
               </div>
+              </div><!-- /hangar-locked-section -->
             </div>
           </div>
         </div>
@@ -6416,9 +6495,11 @@ function toggleSound() {
     if (bgmHome) bgmHome.pause();
     if (bgmBattle) bgmBattle.pause();
   } else {
-    // サウンドON切替時、戦闘中ならbattle BGMを直ちに再生
+    // サウンドON切替時、戦闘中ならbattle BGM、ホームならhome BGMを直ちに再生
     if (gameState.currentQuestion && !gameState.isProcessingAnswer) {
       updateBgmState('battle');
+    } else {
+      updateBgmState('home');
     }
   }
 }
@@ -6434,6 +6515,17 @@ function updateBgmState(screen) {
       }
       if (bgmHome) {
         bgmHome.volume = 0.35;
+        bgmHome.loop = true;
+        if (!bgmHome._hasLoopListener) {
+          bgmHome.addEventListener('ended', function() {
+            try {
+              this.currentTime = 0;
+              const rep = this.play();
+              if (rep && typeof rep.catch === 'function') rep.catch(() => {});
+            } catch (err) {}
+          });
+          bgmHome._hasLoopListener = true;
+        }
         const p = bgmHome.play();
         if (p && typeof p.catch === 'function') p.catch(() => {});
       }
@@ -8607,7 +8699,14 @@ const PILOT_WORDS = {
   ]
 };
 
-function openHangarModal(tab = 'ship') {
+const HANGAR_LOCK_CONFIG = {
+  ship: true,      // 機体・レーザーカスタマイズ: ロック（調整中）
+  avatar: true,    // 3Dアバター機能: ロック（調整中）
+  costume: true,   // 着せ替え機能: ロック（調整中）
+  codename: false  // 二つ名コードネーム: 利用可能
+};
+
+function openHangarModal(tab = 'pilot') {
   const modal = document.getElementById('custom-modal');
   if (modal) modal.style.display = 'flex';
   initCustomOptions();
@@ -8761,6 +8860,7 @@ function randomizePilotName() {
 }
 
 function selectShip(shipId) {
+  if (HANGAR_LOCK_CONFIG.ship) return;
   gameState.shipId = shipId;
   initCustomOptions();
   applyCustomizationStyles();
@@ -8769,6 +8869,7 @@ function selectShip(shipId) {
 }
 
 function selectLaser(laserId) {
+  if (HANGAR_LOCK_CONFIG.ship) return;
   gameState.laserId = laserId;
   initCustomOptions();
   applyCustomizationStyles();
@@ -8875,7 +8976,8 @@ let currentCostumeSubTab = 'cat'; // 'cat' or 'robot'
 let currentCatCostumeCat = 'outfit'; // 'outfit', 'accessory', or 'aura'
 let currentRobotCostumeCat = 'chest'; // 'chest', 'color', 'head', 'aura'
 
-function selectAvatarType(type = 'vrm') {
+function selectAvatarType(type = 'vrm', force = false) {
+  if (HANGAR_LOCK_CONFIG.avatar && !force) return;
   const btnVrm = document.getElementById('btn-type-vrm');
   const btnRobot = document.getElementById('btn-type-robot');
   const btnCostume = document.getElementById('btn-type-costume');
@@ -8916,7 +9018,7 @@ function selectAvatarType(type = 'vrm') {
   } else if (type === 'costume') {
     // きせかえタブを開いたときは現在のアバターに合わせたサブタブを表示
     const targetSubTab = gameState.avatarType === 'robot' ? 'robot' : 'cat';
-    switchCostumeSubTab(targetSubTab);
+    switchCostumeSubTab(targetSubTab, true);
   }
 
   saveCustomization();
@@ -8930,6 +9032,7 @@ function selectAvatarType(type = 'vrm') {
 }
 
 function triggerCurrentAction() {
+  if (HANGAR_LOCK_CONFIG.avatar) return;
   if (window.VrmAvatarManager) {
     if (window.VrmAvatarManager.currentAvatarMode === 'robot' || gameState.avatarType === 'robot') {
       window.VrmAvatarManager.triggerAction('wave');
@@ -8940,12 +9043,14 @@ function triggerCurrentAction() {
 }
 
 function triggerVrmAction(action) {
+  if (HANGAR_LOCK_CONFIG.avatar) return;
   if (window.VrmAvatarManager) {
     window.VrmAvatarManager.triggerAction(action);
   }
 }
 
 function switchVrmModel(modelId) {
+  if (HANGAR_LOCK_CONFIG.avatar) return;
   if (!['men', 'women'].includes(modelId)) return;
   gameState.vrmModel = modelId;
   saveCustomization();
@@ -8974,10 +9079,12 @@ function switchVrmModel(modelId) {
 }
 
 function onCostumePrepClick() {
+  if (HANGAR_LOCK_CONFIG.costume) return;
   selectAvatarType('costume');
 }
 
 function setAvatarExpression(expr) {
+  if (HANGAR_LOCK_CONFIG.avatar) return;
   gameState.vrmExpression = expr;
   const exprs = ['happy', 'neutral', 'surprised', 'angry', 'wink'];
   exprs.forEach(e => {
@@ -9019,6 +9126,7 @@ function initRobotPanelUI() {
 }
 
 function switchRobotChest(id) {
+  if (HANGAR_LOCK_CONFIG.avatar) return;
   gameState.costume.robotChest = id;
   saveCustomization();
   if (window.ROBOT_COSTUMES_DATA?.chest) {
@@ -9037,6 +9145,7 @@ function switchRobotChest(id) {
 }
 
 function switchRobotColor(id) {
+  if (HANGAR_LOCK_CONFIG.avatar) return;
   gameState.costume.robotColor = id;
   saveCustomization();
   if (window.ROBOT_COSTUMES_DATA?.color) {
@@ -9055,7 +9164,8 @@ function switchRobotColor(id) {
 }
 
 // 👗 きせかえサブタブ切り替え（ネコ用 / ロボット用）
-function switchCostumeSubTab(subTab) {
+function switchCostumeSubTab(subTab, force = false) {
+  if (HANGAR_LOCK_CONFIG.costume && !force) return;
   currentCostumeSubTab = subTab;
   const btnCat = document.getElementById('btn-costume-cat');
   const btnRobot = document.getElementById('btn-costume-robot');
@@ -9089,6 +9199,7 @@ function switchCostumeSubTab(subTab) {
 
 // 🐱 ネコ用きせかえカテゴリ切り替え＆レンダリング
 function switchCatCostumeCat(cat) {
+  if (HANGAR_LOCK_CONFIG.costume) return;
   currentCatCostumeCat = cat;
   const btnOutfit = document.getElementById('cat-costume-cat-outfit');
   const btnAcc = document.getElementById('cat-costume-cat-acc');
@@ -9129,6 +9240,7 @@ function renderCatCostumeGrid() {
 }
 
 function selectCatCostume(cat, id) {
+  if (HANGAR_LOCK_CONFIG.costume) return;
   if (cat === 'outfit') {
     gameState.costume.catOutfit = id;
   } else if (cat === 'accessory') {
@@ -9148,6 +9260,7 @@ function selectCatCostume(cat, id) {
 
 // 🤖 ロボット用きせかえカテゴリ切り替え＆レンダリング
 function switchRobotCostumeCat(cat) {
+  if (HANGAR_LOCK_CONFIG.costume) return;
   currentRobotCostumeCat = cat;
   const categories = ['chest', 'color', 'head', 'aura'];
   categories.forEach(c => {
@@ -9185,6 +9298,7 @@ function renderRobotCostumeGrid() {
 }
 
 function selectRobotCostume(cat, id) {
+  if (HANGAR_LOCK_CONFIG.costume) return;
   if (cat === 'chest') {
     gameState.costume.robotChest = id;
     switchRobotChest(id);
@@ -9752,15 +9866,20 @@ function initGame() {
   try { initCanvas(); } catch (e) { console.warn('initCanvas error:', e); }
   try { initInputListeners(); } catch (e) { console.warn('initInputListeners error:', e); }
   try { initBackgroundVideo(); } catch (e) { console.warn('initBackgroundVideo error:', e); }
+  try { updateBgmState('home'); } catch (e) { console.warn('initial BGM play error:', e); }
 
   const soundBtn = document.getElementById('sound-toggle-btn');
   if (soundBtn) {
     soundBtn.addEventListener('click', toggleSound);
   }
 
-  // 画面クリックでオーディオコンテキスト再開 ＆ フォーカス補助
+  // 画面クリックでオーディオコンテキスト再開 ＆ ホームBGM再生 ＆ フォーカス補助
   window.addEventListener('pointerdown', (e) => {
     getAudioContext();
+    // ホーム画面表示中ならホームBGM（和風サイバー.mp3）を確実に再生開始
+    if (!gameState.currentQuestion && gameState.soundEnabled) {
+      updateBgmState('home');
+    }
     // タイムアウト表示中に画面タップで即座に次の問題へ進む（ボタン自体のクリックイベントと競合しないよう配慮）
     if (gameState.isTimeoutPending && !e.target.closest('#btn-timeout-next')) {
       if (typeof proceedAfterTimeout === 'function') {
